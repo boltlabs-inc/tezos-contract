@@ -1,5 +1,5 @@
 # Example usage:
-# python3 zkchannel_edo2net_broadcaster.py --cust=tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json --merch=tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json --custclose=cust_close.json --merchclose=merch_close.json 
+# python3 zkchannel_edo2net_broadcaster.py --contract=zkchannel_contract.tz --cust=tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json --merch=tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json --custclose=cust_close.json --merchclose=merch_close.json 
 
 import argparse
 from pytezos import pytezos
@@ -51,6 +51,7 @@ def convert_mt_to_tez(balance):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--shell", "-n", help="the address to connect to edo2net", default = "https://rpc.tzkt.io/edo2net/")
+    parser.add_argument("--contract", "-z", help="zkchannels michelson contract")
     parser.add_argument("--cust", "-c", help="customer's testnet account json file")
     parser.add_argument("--merch", "-m", help="merchant's testnet account json file")
     parser.add_argument("--custclose", "-cc", help="Enter the filename (with path) to the cust_close.json file created by zkchannels-cli")
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     merch_close_json = read_json_file(merch_close_file)
 
     # load zchannel contracts
-    main_code = ContractInterface.from_file('zkchannel_contract.tz')
+    main_code = ContractInterface.from_file(args.contract)
 
     # Activate cust and merch testnet accounts
     try:
@@ -194,18 +195,15 @@ if __name__ == "__main__":
     s1 = sig_s1 
     s2 = sig_s2 
 
-    # storage = '\'(Pair (Pair (Pair {custBal} {g2}) (Pair {merchBal} (Pair {merchPk0} {merchPk1}))) (Pair (Pair {merchPk2} (Pair {merchPk3} {merchPk4})) (Pair {rev_lock_fr} (Pair {s1} {s2}))))\''.format(s1=s1, s2=s2, g2=g2, merchPk0=merchPk0, merchPk1=merchPk1, merchPk2=merchPk2, merchPk3=merchPk3, merchPk4=merchPk4, rev_lock_fr=rev_lock_fr, custBal=new_cust_bal_mt, merchBal=new_merch_bal_mt)
-
     close_storage = {
         "custBal": new_cust_bal,
         "merchBal": new_merch_bal,
         "revLock": rev_lock_fr,
-    "s1": "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "s1": s1,
         "s2": s2
     }
 
     print("Broadcasting Cust Close")
-    # print(cust_ci.custClose(close_storage).cmdline())
     out = cust_ci.custClose(close_storage).inject(_async=False)
     print("Cust Close ophash: ", out['hash'])
 
