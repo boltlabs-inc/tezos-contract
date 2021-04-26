@@ -1,12 +1,3 @@
-# tezos-sandbox dir
-/cli - the zkchannels-cli used for executing the off-chain side of the protocol.<br>
-/docs - docs, tutorials, diagrams, and benchmarks.<br>
-/smartpy_scripts - useful smartpy script examples.<br>
-/tests_python/zkchannels_contract - zkchannels smartpy and michelson contract with tezos-client pytest script.<br>
-/watchtower - notification watchtower implementation in pytezos.<br>
-/zkchannel_sandbox - tezos-client pytests for ps sig verification logic.<br>
-
-
 # Testing with Tezos using BLS12-381
 ## Building on sandbox
 
@@ -51,10 +42,10 @@ To switch back to latest stable version of rust do the following:
     source ./src/bin_client/bash-completion.sh
     export TEZOS_CLIENT_UNSAFE_DISABLE_DISCLAIMER=Y
 
-(5) Clone libzkchannels repo
+(5) Clone tezos-contract repo
 
     cd ..
-    git clone https://github.com/boltlabs-inc/libzkchannels.git
+    git clone https://github.com/boltlabs-inc/tezos-contract.git
     cd tezos
 
 (6) Can run pytests (need Python 3.8+)
@@ -62,43 +53,14 @@ To switch back to latest stable version of rust do the following:
     virtualenv --python=python3 venv
     source ./venv/bin/activate
     
-(7) Setup poetry environment (using `pyproject.toml` from the tezos-sandbox dir)
+(7) Setup poetry environment (using `pyproject.toml` from the sandbox-tests dir)
 
-    cp ../libzkchannels/tezos-sandbox/pyproject.toml .
+    cp ../tezos-contract/sandbox-tests/pyproject.toml .
     poetry install 
-
-(8) Install some dependencies
-
-    pip install base58check ed25519 pyblake2
 
 (8) Run the test sandbox script for the zkChannels contract
 
-    cp -r ../libzkchannels/tezos-sandbox/tests_python/zkchannels_contract tests_python/
+    cp -r ../tezos-contract/sandbox-tests/test-files tests_python/
+    cp ../tezos-contract/zkchannels-contract/zkchannel_contract.tz tests_python/test-files/
     cd tests_python/
-    ./zkchannels_contract/run_test.sh zkchannels-contract/test_zkchannel.py zkchannels_contract/sample_cust_close.json 
-## Installing SmartPy
-
-SmartPy is only needed to run the SmartPy scripts. It is not needed for testing the tezos smart contracts with the Tezos sandbox node. Alternatively, you can also use the [SmartPy online IDE](https://smartpy.io/) to run the SmartPy scripts.
-
-(1) Clone the source repo
-
-    git clone --recurse-submodules https://gitlab.com/SmartPy/SmartPy
-
-(2) Install the dependencies
-
-    env/naked/init
-
-(3) Build the compiler
-
-    ./envsh
-    ./with_env make
-    ./with_env make test
-
-(4) In the case of a naked environment, this should also work:
-
-    smartpy-cli/SmartPy.sh --help
-
-(5) Run unit tests for zkChannels contract as follows:
-
-    mkdir tmp/
-    smartpy-cli/SmartPy.sh test ../smartpy_scripts/zkchannels.py tmp/
+    ./test-files/run_test.sh test-files/test_zkchannel.py test-files/sample_cust_close.json 
