@@ -63,4 +63,4 @@ To switch back to latest stable version of rust do the following:
     cp -r ../tezos-contract/sandbox-tests/test-files tests_python/
     cp ../tezos-contract/zkchannels-contract/zkchannel_contract.tz tests_python/test-files/
     cd tests_python/
-    ./test-files/run_test.sh test-files/test_zkchannel.py test-files/sample_cust_close.json 
+    . test-files/run_test.sh test-files/test_zkchannel.py test-files/sample_cust_close.json 
