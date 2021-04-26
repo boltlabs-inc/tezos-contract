@@ -1,6 +1,6 @@
 # tezos-contract
 
-## zkChannels smart contract
+### zkChannels smart contract
 [zkchannels-contract](zkchannels-contract) contains the zkChannels michelson smart contract, as well as the high-level [SmartPy](https://smartpy.io) script used to generate it.
 
 ### Sandbox testing
