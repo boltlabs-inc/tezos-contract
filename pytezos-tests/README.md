@@ -2,6 +2,8 @@
 
 This tutorial is designed to walk you through how to test the zkChannels contract on edo2net using [PyTezos](https://github.com/baking-bad/pytezos).
 
+Instructions for Ubuntu 20.04.
+
 Clone tezos-contract repo and navigate to `tezos-contract/pytezos-tests`.
 ```
     git clone https://github.com/boltlabs-inc/tezos-contract.git
