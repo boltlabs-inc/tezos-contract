@@ -2,7 +2,13 @@
 
 This tutorial is designed to walk you through how to test the zkChannels contract on edo2net using [PyTezos](https://github.com/baking-bad/pytezos).
 
-Starting from the directory `tezos-contract/pytezos-tests`, set up python3 virtual environment.
+Clone tezos-contract repo and navigate to `tezos-contract/pytezos-tests`.
+```
+    git clone https://github.com/boltlabs-inc/tezos-contract.git
+    cd tezos-contract/pytezos-tests
+```
+
+Set up python3 virtual environment.
 ```
     virtualenv --python=python3 venv
     source ./venv/bin/activate
