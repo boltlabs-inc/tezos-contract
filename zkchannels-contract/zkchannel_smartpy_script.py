@@ -4,7 +4,7 @@ import smartpy_michelson as mi
  
 # sample inputs for scenario tests
 CHAN_ID_FR = "0x132418fbc6d20a33a7c244eea92c97369591bfd6c433138ae8387afb0484b707"
-REV_LOCK_FR = "0xb0854feb2073d023e376dcbc85233639f96dbb8cffa631b98b819b423ac14b3e"
+REV_LOCK_FR = "0x15a0ca64c4ce8a0b42726770a8d3170229978b14548ba2a67ac967dbdbcde100"
 SIG_S1_G1 = "0x0d1efbfe30754c86913a75e76e7544d87a04fe843433e5a3fe05fa69d587fb65aa12bde5925f073d9500ebfeeec7082408d8bcf890c758b2eb2c5bd05ee7a20d05d2ff03a55f286435039d78b67a244b7a93d49241e3c9da13c155c89dfb2a4f"
 SIG_S2_G1 = "0x068943ec6abcd6ce2d44337501c86db97617e9b76fb26dc4ca8d0494b8ecb526a552fa23293164252811f54be87a44c6066063bbf9ead6a0ef110bd094258cfad68010888041e8cffb2ffce2736dfa0fce1bf5a15c2bee0575c83395562130fb"
 PUB_GEN_G2 = "0x12ade57fe34fbe7a6fdcb1fc0d828cb3a5ef7fd346f5ea5cbea3b93e4514fae09d674b4d66d3bc673c4f831c8e24b8780fffb940d1776bfa796992c6d8f3d1a009394bbaf590fa2997ff97ba4c8dca3df4a2fc1d8059c2ccf914322823d870b00770ad29db057f19b894748ea2b1b622c00d94d5a412d61c7a0797f6d5c7b5d22e7bffd3f6f87158105020f9c625941b055c2555b5dcefc3c1b40f1098a3546e655e91c94ceb5db3f3ecd405caf39b2dda56412ebf3796e54043b0cc8d30558b"
@@ -24,7 +24,6 @@ CLOSED = 4
  
 ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
-        
 # chanID is a unique identifier for the channel.
 # Addresses are used both for interacting with contract, and receiving payouts.
 # Public keys are used for verifying signatures required for certain state transitions.
@@ -38,7 +37,7 @@ class ZkChannel(sp.Contract):
         packed_s1 = sp.pack(val)
         packed_zero = sp.to_constant(sp.pack(sp.bls12_381_g1(ZERO_IN_G1)))
         sp.result(packed_s1 != packed_zero)
-    
+
     def __init__(self, chanID, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB):
         self.init(
                   chanID            = chanID,
@@ -78,8 +77,8 @@ class ZkChannel(sp.Contract):
         # If cust and merch Balances have been funded, mark the channel as open.
         sp.if ((self.data.custBal == self.data.custFunding) & (self.data.merchBal == self.data.merchFunding)):
             self.data.status = OPEN
-            
- 
+
+
     # reclaimFunding allows the customer or merchant to withdraw funds
     # if the other party has not funded their side of the channel yet.
     @sp.entry_point
@@ -116,7 +115,7 @@ class ZkChannel(sp.Contract):
         self.data.custBal = sp.tez(0)
         self.data.merchBal = sp.tez(0)
         self.data.status = CLOSED
-        
+
     @sp.entry_point
     def custClose(self, params):
         sp.verify(self.data.custAddr == sp.sender)
@@ -253,7 +252,7 @@ def test():
     merchPk3 = sp.bls12_381_g2(MERCH_PK3_G2)
     merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
     merchPk5 = sp.bls12_381_g2(MERCH_PK5_G2)
-    
+
     scenario.h2("Scenario 1: escrow -> merchClose -> merchClaim")
     scenario.h3("escrow")
     c1 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
