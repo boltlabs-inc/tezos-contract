@@ -167,7 +167,13 @@ class ZkChannel(sp.Contract):
     def merchDispute(self, params):
         sp.verify(self.data.merchAddr == sp.sender)
         sp.verify(self.data.status == CUST_CLOSE)
-        sp.verify(self.data.revLock == sp.sha256(params.secret))
+        
+        # convert rev_lock in storage from LE to BE
+        revlock_be = sp.local('revlock_be', sp.list([]))
+        sp.for i in sp.range(0, 32):
+            revlock_be.value.push(sp.slice(self.data.revLock, i, 1).open_some())
+            
+        sp.verify(sp.concat(revlock_be.value) == sp.sha256(params.secret))
         sp.send(self.data.merchAddr, self.data.custBal)
         self.data.custBal = sp.tez(0)
         self.data.status = CLOSED
