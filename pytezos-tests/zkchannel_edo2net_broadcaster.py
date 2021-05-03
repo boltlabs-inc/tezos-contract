@@ -211,13 +211,11 @@ if __name__ == "__main__":
     out = cust_ci.custClose(close_storage).inject(_async=False)
     print("Cust Close ophash: ", out['hash'])
 
-    # print("Dry run of Merch Dispute")
-    # rev_secret = merch_close_json['rev_secret']
-    # out = cust_ci.merchDispute(rev_secret).run_operation()
-    # if out.operations:
-    #     print("Merch Dispute successful")
-    # else:
-    #     print("Merch Dispute unsuccessful")
+    print("Dry run of Merch Dispute")
+    rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
+    out = merch_ci.merchDispute(rev_secret).run_operation()
+    if len(out.operations) > 0:
+        print("Merch Dispute rev_secret worked!")
 
     print("Broadcasting Cust Claim")
     out = cust_ci.custClaim().inject()
