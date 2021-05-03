@@ -35,6 +35,7 @@ def get_cust_close_token(data):
         add_hex_prefix(m["rev_lock"]),
         add_hex_prefix(int(m["cust_bal"]).to_bytes(32, 'little').hex()),
         add_hex_prefix(int(m["merch_bal"]).to_bytes(32, 'little').hex()),
+        add_hex_prefix(m["close"]),
     ]
     sig = data.get("signature")
     s1 = add_hex_prefix(sig.get("s1"))
@@ -124,16 +125,18 @@ if __name__ == "__main__":
 
     # Create initial storage for main zkchannel contract
     (pubkey, message, signature) = get_cust_close_token(cust_close_json)
-    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr = message
+    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
 
     g2 = pubkey.get("g2") 
     merchPk0 = pubkey.get("Y0") 
     merchPk1 = pubkey.get("Y1") 
     merchPk2 = pubkey.get("Y2") 
     merchPk3 = pubkey.get("Y3") 
-    merchPk4 = pubkey.get("X") 
+    merchPk4 = pubkey.get("Y4") 
+    merchPk5 = pubkey.get("X") 
 
     main_storage = {'chanID': chan_id_fr, 
+    'hashCloseB': close_hash,
     'custAddr': cust_addr, 
     'custBal':0, 
     'custFunding': 20000000, 
@@ -149,6 +152,7 @@ if __name__ == "__main__":
     'merchPk2': merchPk2,
     'merchPk3': merchPk3,
     'merchPk4': merchPk4,
+    'merchPk5': merchPk5,
     'revLock': '0x1f98c84caf714d00ede5d23142bc166d84f8cd42adc18be22c3d47453853ea49', 
     'selfDelay': 3, 
     'status': 0}
@@ -185,7 +189,7 @@ if __name__ == "__main__":
 
     # Form cust close storage
     (pubkey, message, signature) = get_cust_close_token(cust_close_json)
-    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr = message
+    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
     sig_s1, sig_s2 = signature
     new_cust_bal_mt = cust_close_json["message"]["cust_bal"]
     new_merch_bal_mt = cust_close_json["message"]["merch_bal"]
@@ -207,13 +211,11 @@ if __name__ == "__main__":
     out = cust_ci.custClose(close_storage).inject(_async=False)
     print("Cust Close ophash: ", out['hash'])
 
-    # print("Dry run of Merch Dispute")
-    # rev_secret = merch_close_json['rev_secret']
-    # out = cust_ci.merchDispute(rev_secret).run_operation()
-    # if out.operations:
-    #     print("Merch Dispute successful")
-    # else:
-    #     print("Merch Dispute unsuccessful")
+    print("Dry run of Merch Dispute")
+    rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
+    out = merch_ci.merchDispute(rev_secret).run_operation()
+    if len(out.operations) > 0:
+        print("Merch Dispute rev_secret worked!")
 
     print("Broadcasting Cust Claim")
     out = cust_ci.custClaim().inject()
