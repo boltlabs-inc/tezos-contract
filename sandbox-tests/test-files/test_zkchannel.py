@@ -5,15 +5,16 @@ import sys, json
 
 BAKE_ARGS = ['--minimal-timestamp']
 
-def form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal0, merch_bal0, rev_lock, self_delay, pubkey):
+def form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal0, merch_bal0, rev_lock, self_delay, pubkey, close_hash):
     g2 = pubkey.get("g2") 
     merchPk0 = pubkey.get("Y0") 
     merchPk1 = pubkey.get("Y1") 
     merchPk2 = pubkey.get("Y2") 
     merchPk3 = pubkey.get("Y3") 
-    merchPk4 = pubkey.get("X") 
+    merchPk4 = pubkey.get("Y4") 
+    merchPk5 = pubkey.get("X") 
 
-    return '(Pair (Pair (Pair (Pair {chan_id} \"{cust_addr}\") (Pair 0 {cust_bal0})) (Pair (Pair \"{cust_pk}\" "0") (Pair {g2} (Pair \"{merch_addr}\" 0)))) (Pair (Pair (Pair {merch_bal0} \"{merch_pk}\") (Pair {merchPk0} (Pair {merchPk1} {merchPk2}))) (Pair (Pair {merchPk3} {merchPk4}) (Pair {rev_lock} (Pair {self_delay} 0)))))'.format(chan_id=chan_id, cust_addr=cust_addr, cust_pk=cust_pk, merch_addr=merch_addr, merch_pk=merch_pk, cust_bal0=cust_bal0, merch_bal0=merch_bal0, self_delay=self_delay, rev_lock=rev_lock, g2=g2, merchPk0=merchPk0, merchPk1=merchPk1, merchPk2=merchPk2, merchPk3=merchPk3, merchPk4=merchPk4)
+    return '(Pair (Pair (Pair (Pair {chan_id} \"{cust_addr}\") (Pair 0 (Pair {cust_bal0} \"{cust_pk}\"))) (Pair (Pair "0" {g2}) (Pair {close_hash} (Pair \"{merch_addr}\" 0)))) (Pair (Pair (Pair {merch_bal0} \"{merch_pk}\") (Pair {merchPk0} (Pair {merchPk1} {merchPk2}))) (Pair (Pair {merchPk3} (Pair {merchPk4} {merchPk5})) (Pair {rev_lock} (Pair {self_delay} 0)))))'.format(chan_id=chan_id, cust_addr=cust_addr, cust_pk=cust_pk, merch_addr=merch_addr, merch_pk=merch_pk, cust_bal0=cust_bal0, merch_bal0=merch_bal0, self_delay=self_delay, rev_lock=rev_lock, g2=g2, merchPk0=merchPk0, merchPk1=merchPk1, merchPk2=merchPk2, merchPk3=merchPk3, merchPk4=merchPk4, merchPk5=merchPk5, close_hash=close_hash)
 
 
 def form_mutual_state(chan_id, cust_addr, merch_addr, cust_bal_mt, merch_bal_mt):
@@ -41,6 +42,7 @@ def get_cust_close_token(data):
         add_hex_prefix(m["rev_lock"]),
         add_hex_prefix(int(m["cust_bal"]).to_bytes(32, 'little').hex()),
         add_hex_prefix(int(m["merch_bal"]).to_bytes(32, 'little').hex()),
+        add_hex_prefix(m["close"]),
     ]
     sig = data.get("signature")
     s1 = add_hex_prefix(sig.get("s1"))
@@ -78,7 +80,7 @@ def scenario_cust_close(contract_path, pubkey, message, signature, balances):
 
         # Define initial storage and channel variables
         contract = contract_path + "zkchannel_contract.tz"
-        chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr = message
+        chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
         sig_s1, sig_s2 = signature
 
         contract_name = "my_zkchannel"
@@ -96,7 +98,7 @@ def scenario_cust_close(contract_path, pubkey, message, signature, balances):
         self_delay = 3
 
         # Originate zkchannel contract (without funding)
-        initial_storage = form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey)
+        initial_storage = form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey, close_hash)
         args = ["--init", initial_storage, "--burn-cap", burncap]
         sandbox.client(0).originate(contract_name, 0, "bootstrap1", contract, args)
         
@@ -217,7 +219,7 @@ def scenario_mutual_close(contract_path, pubkey):
 
         # Define initial storage and channel variables
         contract = contract_path + "zkchannel_contract.tz"
-        chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr = message
+        chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
         sig_s1, sig_s2 = signature
 
         contract_name = "my_zkchannel"
@@ -235,7 +237,7 @@ def scenario_mutual_close(contract_path, pubkey):
         self_delay = 3
 
         # Originate zkchannel contract (without funding)
-        initial_storage = form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey)
+        initial_storage = form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey, close_hash)
         args = ["--init", initial_storage, "--burn-cap", burncap]
         sandbox.client(0).originate(contract_name, 0, "bootstrap1", contract, args)
         
