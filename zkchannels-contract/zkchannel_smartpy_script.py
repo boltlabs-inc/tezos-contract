@@ -33,7 +33,7 @@ ZERO_IN_G1 = "0x4000000000000000000000000000000000000000000000000000000000000000
 class ZkChannel(sp.Contract):
 
     @sp.global_lambda
-    def is_g1_zero(val):
+    def is_g1_not_zero(val):
         packed_s1 = sp.pack(val)
         packed_zero = sp.to_constant(sp.pack(sp.bls12_381_g1(ZERO_IN_G1)))
         sp.result(packed_s1 != packed_zero)
@@ -126,8 +126,8 @@ class ZkChannel(sp.Contract):
         revLock = params.revLock
         s1 = params.s1
         s2 = params.s2
-        # Fail if G1 is set to 0
-        sp.verify(self.is_g1_zero(s1))
+        # Fail if s1 is set to 0
+        sp.verify(self.is_g1_not_zero(s1))
         # Prepare pairing check inputs
         g2 = self.data.g2
         Y0 = self.data.merchPk0
