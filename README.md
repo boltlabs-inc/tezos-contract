@@ -2,7 +2,7 @@
 
 ## Security Warnings
 
-The zkChannels contract is currently under development and has not been passed a security audit. It is not suitable for production yet.
+The zkChannels contract is currently under development and has not passed a security audit. It is not suitable for production yet.
 
 ## License
 
