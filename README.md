@@ -8,7 +8,7 @@ The zkChannels contract is currently under development and has not been passed a
 
 All code in this workspace is licensed under
 
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+ * MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
 
 ## zkChannels smart contract
 
