@@ -173,7 +173,7 @@ class ZkChannel(sp.Contract):
         sp.for i in sp.range(0, 32):
             revlock_be.value.push(sp.slice(self.data.revLock, i, 1).open_some())
             
-        sp.verify(sp.concat(revlock_be.value) == sp.sha256(params.secret))
+        sp.verify(sp.concat(revlock_be.value) == sp.sha3(params.secret))
         sp.send(self.data.merchAddr, self.data.custBal)
         self.data.custBal = sp.tez(0)
         self.data.status = CLOSED
@@ -245,7 +245,7 @@ def test():
     hashCloseB = sp.bls12_381_fr(HASH_CLOSE_B)
     custAddr = aliceCust.address
     merchAddr = bobMerch.address
-    revLock = sp.sha256(sp.bytes("0x00"))
+    revLock = sp.sha3(sp.bytes("0x00"))
     # selfDelay = 60*60*24 # seconds in one day - 86,400
     selfDelay = 3 # seconds in one day - 86,400
     scenario.h2("On-chain installment")
@@ -306,7 +306,7 @@ def test():
     scenario += c3.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c3.addFunding().run(sender = bobMerch, amount = merchFunding)
     scenario.h3("custClose")
-    revLock2 = sp.bytes(REV_LOCK_FR) # sp.sha256(sp.bytes("0x12345678aacc"))
+    revLock2 = sp.bytes(REV_LOCK_FR) # sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c3.custClose(
         revLock = revLock2, 
         custBal = custBal, 
@@ -327,7 +327,7 @@ def test():
     scenario.h3("expiry")
     scenario += c4.expiry().run(sender = bobMerch)
     scenario.h3("custClose")
-    revLock3 = sp.sha256(sp.bytes("0x12345678aacc"))
+    revLock3 = sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c4.custClose(
         revLock = revLock2, 
         custBal = custBal, 
