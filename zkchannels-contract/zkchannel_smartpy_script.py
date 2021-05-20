@@ -18,7 +18,7 @@ HASH_CLOSE_B = "0x365d084a3d3a3d810606983a7690a8a119bacad72340122fa3449b1400f20f
  
 AWAITING_FUNDING = 0
 OPEN = 1
-MERCH_CLOSE = 2
+EXPIRY = 2
 CUST_CLOSE = 3
 CLOSED = 4
  
@@ -93,23 +93,23 @@ class ZkChannel(sp.Contract):
             sp.send(self.data.merchAddr, self.data.merchBal)
             self.data.merchBal = sp.tez(0)
  
-    # merchClose can be called by the merchant to initiate channel closure.
+    # expiry can be called by the merchant to initiate channel closure.
     # The customer should call custClose using the latest state. Otherwise,
     # after the delay expires, the merchant will be able to claim all the
     # funds in the channel using merchClaim.
     @sp.entry_point
-    def merchClose(self):
+    def expiry(self):
         sp.verify(self.data.merchAddr == sp.sender)
         sp.verify(self.data.status == OPEN)
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
-        self.data.status = MERCH_CLOSE
+        self.data.status = EXPIRY
  
     # merchClaim can be called by the merchant if the customer has not called
     # custClose before the delay period has expired.
     @sp.entry_point
     def merchClaim(self):
         sp.verify(self.data.merchAddr == sp.sender)
-        sp.verify(self.data.status == MERCH_CLOSE)
+        sp.verify(self.data.status == EXPIRY)
         sp.verify(self.data.delayExpiry < sp.now)
         sp.send(self.data.merchAddr, self.data.custBal + self.data.merchBal)
         self.data.custBal = sp.tez(0)
@@ -119,7 +119,7 @@ class ZkChannel(sp.Contract):
     @sp.entry_point
     def custClose(self, params):
         sp.verify(self.data.custAddr == sp.sender)
-        sp.verify((self.data.status == OPEN) | (self.data.status == MERCH_CLOSE))
+        sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
         # custClose inputs
         custBal = params.custBal
         merchBal = params.merchBal
@@ -245,7 +245,7 @@ def test():
     hashCloseB = sp.bls12_381_fr(HASH_CLOSE_B)
     custAddr = aliceCust.address
     merchAddr = bobMerch.address
-    revLock = sp.sha256(sp.bytes("0x12345678aabb"))
+    revLock = sp.sha256(sp.bytes("0x00"))
     # selfDelay = 60*60*24 # seconds in one day - 86,400
     selfDelay = 3 # seconds in one day - 86,400
     scenario.h2("On-chain installment")
@@ -259,15 +259,15 @@ def test():
     merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
     merchPk5 = sp.bls12_381_g2(MERCH_PK5_G2)
 
-    scenario.h2("Scenario 1: escrow -> merchClose -> merchClaim")
+    scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
     c1 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
     scenario += c1
     scenario.h3("Funding the channel")
     scenario += c1.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c1.addFunding().run(sender = bobMerch, amount = merchFunding)
-    scenario.h3("merchClose")
-    scenario += c1.merchClose().run(sender = bobMerch)
+    scenario.h3("expiry")
+    scenario += c1.expiry().run(sender = bobMerch)
     scenario.h3("unsuccessful merchClaim before delay period")
     scenario += c1.merchClaim().run(sender = bobMerch, now = sp.timestamp(1), valid = False)
     scenario.h3("successful merchClaim after delay period")
@@ -317,15 +317,15 @@ def test():
     scenario.h3("merchDispute called with correct secret")
     # scenario += c3.merchDispute(secret = sp.bytes("0x12345678aacc")).run(sender = bobMerch, now = sp.timestamp(10))
  
-    scenario.h2("Scenario 4: escrow -> merchClose -> custClose")
+    scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
     c4 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
     scenario += c4
     scenario.h3("Funding the channel")
     scenario += c4.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c4.addFunding().run(sender = bobMerch, amount = merchFunding)
-    scenario.h3("merchClose")
-    scenario += c4.merchClose().run(sender = bobMerch)
+    scenario.h3("expiry")
+    scenario += c4.expiry().run(sender = bobMerch)
     scenario.h3("custClose")
     revLock3 = sp.sha256(sp.bytes("0x12345678aacc"))
     scenario += c4.custClose(
