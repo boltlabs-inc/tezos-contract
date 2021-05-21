@@ -120,15 +120,9 @@ class ZkChannel(sp.Contract):
         self.data.status = CLOSED
 
     @sp.entry_point
-    def custClose(self, params):
+    def custClose(self, custBal, merchBal, revLock, s1, s2):
         sp.verify(self.data.custAddr == sp.sender)
         sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
-        # custClose inputs
-        custBal = params.custBal
-        merchBal = params.merchBal
-        revLock = params.revLock
-        s1 = params.s1
-        s2 = params.s2
         # Fail if s1 is set to 0
         sp.verify(self.is_g1_not_zero(s1))
         # Prepare pairing check inputs
@@ -160,7 +154,7 @@ class ZkChannel(sp.Contract):
         self.data.revLock = revLock
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
         # Pay merchant immediately (unless amount is 0)
-        sp.if params.merchBal != sp.tez(0):
+        sp.if merchBal != sp.tez(0):
             sp.send(self.data.merchAddr, merchBal)
         self.data.merchBal = sp.tez(0)
         self.data.status = CUST_CLOSE
@@ -169,7 +163,7 @@ class ZkChannel(sp.Contract):
     # to the latest custClose state. If the secret is valid, the merchant will
     # receive the customer's balance too.
     @sp.entry_point
-    def merchDispute(self, params):
+    def merchDispute(self, secret):
         sp.verify(self.data.merchAddr == sp.sender)
         sp.verify(self.data.status == CUST_CLOSE)
         
@@ -178,7 +172,7 @@ class ZkChannel(sp.Contract):
         sp.for i in sp.range(0, 32):
             revlock_be.value.push(sp.slice(self.data.revLock, i, 1).open_some())
             
-        sp.verify(sp.concat(revlock_be.value) == sp.sha3(params.secret))
+        sp.verify(sp.concat(revlock_be.value) == sp.sha3(secret))
         sp.send(self.data.merchAddr, self.data.custBal)
         self.data.custBal = sp.tez(0)
         self.data.status = CLOSED
@@ -198,25 +192,25 @@ class ZkChannel(sp.Contract):
     # allows for an instant withdrawal of the funds. mutualClose requires
     # a signature from the merchant and the customer on the final state.
     @sp.entry_point
-    def mutualClose(self, params):
+    def mutualClose(self, custBal, merchBal, merchSig):
         sp.verify(self.data.custAddr == sp.sender)
         sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
         # Check merchant signature
         sp.verify(sp.check_signature(self.data.merchPk,
-                                     params.merchSig,
+                                     merchSig,
                                      sp.pack(sp.record(
                                              contract_id = sp.self_address,
                                              context_string = self.data.context_string,
                                              cid = self.data.cid,
-                                             custBal = params.custBal,
-                                             merchBal = params.merchBal)
+                                             custBal = custBal,
+                                             merchBal = merchBal)
                                             )
                                     ))
         # Payout balances (unless amount is 0)
-        sp.if params.custBal != sp.tez(0):
-            sp.send(self.data.custAddr, params.custBal)
-        sp.if params.merchBal != sp.tez(0):
-            sp.send(self.data.merchAddr, params.merchBal)
+        sp.if custBal != sp.tez(0):
+            sp.send(self.data.custAddr, custBal)
+        sp.if merchBal != sp.tez(0):
+            sp.send(self.data.merchAddr, merchBal)
         self.data.status = CLOSED
  
  
