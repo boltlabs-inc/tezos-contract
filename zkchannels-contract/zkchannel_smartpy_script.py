@@ -157,7 +157,9 @@ class ZkChannel(sp.Contract):
         self.data.custBal = custBal
         self.data.revLock = revLock
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
-        sp.send(self.data.merchAddr, merchBal)
+        # Pay merchant immediately (unless amount is 0)
+        sp.if params.merchBal != sp.tez(0):
+            sp.send(self.data.merchAddr, merchBal)
         self.data.merchBal = sp.tez(0)
         self.data.status = CUST_CLOSE
  
@@ -208,12 +210,11 @@ class ZkChannel(sp.Contract):
                                              merchBal = params.merchBal)
                                             )
                                     ))
-        self.data.custBal = params.custBal
-        self.data.merchBal = params.merchBal
-        sp.send(self.data.custAddr, self.data.custBal)
-        sp.send(self.data.merchAddr, self.data.merchBal)
-        self.data.custBal = sp.tez(0)
-        self.data.merchBal = sp.tez(0)
+        # Payout balances (unless amount is 0)
+        sp.if params.custBal != sp.tez(0):
+            sp.send(self.data.custAddr, params.custBal)
+        sp.if params.merchBal != sp.tez(0):
+            sp.send(self.data.merchAddr, params.merchBal)
         self.data.status = CLOSED
  
  
