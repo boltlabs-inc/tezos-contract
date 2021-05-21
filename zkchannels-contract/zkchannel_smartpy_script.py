@@ -71,9 +71,11 @@ class ZkChannel(sp.Contract):
         sp.verify(self.data.status == AWAITING_FUNDING)
         sp.if self.data.custAddr == sp.sender:
             sp.verify(sp.amount == self.data.custFunding)
+            sp.verify(self.data.custBal == sp.tez(0))
             self.data.custBal = self.data.custFunding
         sp.if self.data.merchAddr == sp.sender:
             sp.verify(sp.amount == self.data.merchFunding)
+            sp.verify(self.data.merchBal == sp.tez(0))
             self.data.merchBal = self.data.merchFunding
         # If cust and merch Balances have been funded, mark the channel as open.
         sp.if ((self.data.custBal == self.data.custFunding) & (self.data.merchBal == self.data.merchFunding)):
