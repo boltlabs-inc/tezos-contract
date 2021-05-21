@@ -194,7 +194,7 @@ class ZkChannel(sp.Contract):
     @sp.entry_point
     def mutualClose(self, custBal, merchBal, merchSig):
         sp.verify(self.data.custAddr == sp.sender)
-        sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
+        sp.verify(self.data.status == OPEN)
         # Check merchant signature
         sp.verify(sp.check_signature(self.data.merchPk,
                                      merchSig,
@@ -356,3 +356,6 @@ def test():
     scenario += c6.reclaimFunding().run(sender = aliceCust)
  
     scenario.table_of_contents()
+one = sp.local('one', sp.bls12_381_fr("0x01"))
+merch_b = sp.local('merch_b', sp.fst(sp.ediv(merchBal, sp.mutez(1)).open_some()))
+merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, one.value))
