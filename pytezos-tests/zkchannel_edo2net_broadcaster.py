@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     # Create initial storage for main zkchannel contract
     (pubkey, message, signature) = get_cust_close_token(cust_close_json)
-    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
+    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_flag = message
 
     g2 = pubkey.get("g2") 
     merchPk0 = pubkey.get("Y0") 
@@ -135,8 +135,9 @@ if __name__ == "__main__":
     merchPk4 = pubkey.get("Y4") 
     merchPk5 = pubkey.get("X") 
 
-    main_storage = {'chanID': chan_id_fr, 
-    'hashCloseB': close_hash,
+    main_storage = {'cid': chan_id_fr, 
+    'close_flag': close_flag,
+    'context_string': "zkChannels mutual close",
     'custAddr': cust_addr, 
     'custBal':0, 
     'custFunding': 20000000, 
@@ -153,7 +154,7 @@ if __name__ == "__main__":
     'merchPk3': merchPk3,
     'merchPk4': merchPk4,
     'merchPk5': merchPk5,
-    'revLock': '0x1f98c84caf714d00ede5d23142bc166d84f8cd42adc18be22c3d47453853ea49', 
+    'revLock': '0x00', 
     'selfDelay': 3, 
     'status': 0}
 
@@ -183,21 +184,18 @@ if __name__ == "__main__":
     out = merch_ci.addFunding().with_amount(10000000).inject(_async=False)
     print("Merch Add Funding ophash: ", out['hash'])
 
-    print("Broadcasting Expiry")
-    out = merch_ci.merchClose().inject(_async=False)
-    print("Expiry ophash: ", out['hash'])
+    # print("Broadcasting Expiry")
+    # out = merch_ci.expiry().inject(_async=False)
+    # print("Expiry ophash: ", out['hash'])
 
     # Form cust close storage
     (pubkey, message, signature) = get_cust_close_token(cust_close_json)
     chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
-    sig_s1, sig_s2 = signature
+    s1, s2 = signature
     new_cust_bal_mt = cust_close_json["message"]["cust_bal"]
     new_merch_bal_mt = cust_close_json["message"]["merch_bal"]
     new_cust_bal = convert_mt_to_tez(new_cust_bal_mt)
     new_merch_bal = convert_mt_to_tez(new_merch_bal_mt)
-
-    s1 = sig_s1 
-    s2 = sig_s2 
 
     close_storage = {
         "custBal": new_cust_bal,
@@ -214,11 +212,14 @@ if __name__ == "__main__":
     print("Dry run of Merch Dispute")
     rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
     out = merch_ci.merchDispute(rev_secret).run_operation()
-    if len(out.operations) > 0:
-        print("Merch Dispute rev_secret worked!")
+    rev_secret_is_valid = len(out.operations) > 0
+    if rev_secret_is_valid:
+        print("rev_secret was valid!")
 
     print("Broadcasting Cust Claim")
     out = cust_ci.custClaim().inject()
     print("Cust Claim ophash: ", out['hash'])
+
+    assert(rev_secret_is_valid)
 
     print("Tests finished!")
