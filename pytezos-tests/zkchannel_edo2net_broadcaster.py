@@ -183,9 +183,9 @@ if __name__ == "__main__":
     out = merch_ci.addFunding().with_amount(10000000).inject(_async=False)
     print("Merch Add Funding ophash: ", out['hash'])
 
-    print("Broadcasting Merch Close")
+    print("Broadcasting Expiry")
     out = merch_ci.merchClose().inject(_async=False)
-    print("Merch Close ophash: ", out['hash'])
+    print("Expiry ophash: ", out['hash'])
 
     # Form cust close storage
     (pubkey, message, signature) = get_cust_close_token(cust_close_json)
