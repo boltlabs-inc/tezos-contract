@@ -69,6 +69,7 @@ class ZkChannel(sp.Contract):
     @sp.entry_point
     def addFunding(self):
         sp.verify(self.data.status == AWAITING_FUNDING)
+        sp.verify((self.data.custAddr == sp.sender) | (self.data.merchAddr == sp.sender))
         sp.if self.data.custAddr == sp.sender:
             sp.verify(sp.amount == self.data.custFunding)
             sp.verify(self.data.custBal == sp.tez(0))
