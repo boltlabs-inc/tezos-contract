@@ -4,8 +4,9 @@ from launchers.sandbox import Sandbox
 import sys, json
 
 BAKE_ARGS = ['--minimal-timestamp']
+CONTEXT_STRING = "zkChannels mutual close"
 
-def form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal0, merch_bal0, rev_lock, self_delay, pubkey, close_hash):
+def form_initial_storage(cid, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal0, merch_bal0, rev_lock, self_delay, pubkey, close_flag):
     g2 = pubkey.get("g2") 
     merchPk0 = pubkey.get("Y0") 
     merchPk1 = pubkey.get("Y1") 
@@ -13,12 +14,35 @@ def form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust
     merchPk3 = pubkey.get("Y3") 
     merchPk4 = pubkey.get("Y4") 
     merchPk5 = pubkey.get("X") 
+    custBal = 0
+    merchBal = 0
+    status = 0
+    delayExpiry = 0
 
-    return '(Pair (Pair (Pair (Pair {chan_id} \"{cust_addr}\") (Pair 0 (Pair {cust_bal0} \"{cust_pk}\"))) (Pair (Pair "0" {g2}) (Pair {close_hash} (Pair \"{merch_addr}\" 0)))) (Pair (Pair (Pair {merch_bal0} \"{merch_pk}\") (Pair {merchPk0} (Pair {merchPk1} {merchPk2}))) (Pair (Pair {merchPk3} (Pair {merchPk4} {merchPk5})) (Pair {rev_lock} (Pair {self_delay} 0)))))'.format(chan_id=chan_id, cust_addr=cust_addr, cust_pk=cust_pk, merch_addr=merch_addr, merch_pk=merch_pk, cust_bal0=cust_bal0, merch_bal0=merch_bal0, self_delay=self_delay, rev_lock=rev_lock, g2=g2, merchPk0=merchPk0, merchPk1=merchPk1, merchPk2=merchPk2, merchPk3=merchPk3, merchPk4=merchPk4, merchPk5=merchPk5, close_hash=close_hash)
+    return '(Pair (Pair (Pair (Pair {cid} {close_flag}) (Pair \"{context_string}\" (Pair \"{cust_addr}\" {custBal}))) (Pair (Pair {cust_bal0} (Pair \"{cust_pk}\" \"{delayExpiry}\")) (Pair {g2} (Pair \"{merch_addr}\" {merchBal})))) (Pair (Pair (Pair {merch_bal0} \"{merch_pk}\") (Pair {merchPk0} (Pair {merchPk1} {merchPk2}))) (Pair (Pair {merchPk3} (Pair {merchPk4} {merchPk5})) (Pair {rev_lock} (Pair {self_delay} {status})))))'.format(
+        cid=cid, 
+        cust_addr=cust_addr, 
+        cust_pk=cust_pk, 
+        merch_addr=merch_addr, 
+        merch_pk=merch_pk, 
+        cust_bal0=cust_bal0, 
+        merch_bal0=merch_bal0, 
+        self_delay=self_delay, 
+        rev_lock=rev_lock, 
+        g2=g2, 
+        merchPk0=merchPk0, 
+        merchPk1=merchPk1, 
+        merchPk2=merchPk2, 
+        merchPk3=merchPk3, 
+        merchPk4=merchPk4, 
+        merchPk5=merchPk5, 
+        close_flag=close_flag, 
+        context_string=CONTEXT_STRING, 
+        custBal=custBal, 
+        merchBal=merchBal, 
+        status=status, 
+        delayExpiry=delayExpiry)
 
-
-def form_mutual_state(chan_id, cust_addr, merch_addr, cust_bal_mt, merch_bal_mt):
-    return '(Pair (Pair {chan_id} \"{cust_addr}\") (Pair {cust_bal_mt} (Pair \"{merch_addr}\" {merch_bal_mt} )))'.format(chan_id=chan_id, cust_addr=cust_addr, merch_addr=merch_addr, cust_bal_mt=cust_bal_mt, merch_bal_mt=merch_bal_mt)
 
 def read_json_file(json_file):
     f = open(json_file)
@@ -80,11 +104,11 @@ def scenario_cust_close(contract_path, pubkey, message, signature, balances):
 
         # Define initial storage and channel variables
         contract = contract_path + "zkchannel_contract.tz"
-        chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
-        sig_s1, sig_s2 = signature
+        cid_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_flag = message
+        s1, s2 = signature
 
         contract_name = "my_zkchannel"
-        chan_id = chan_id_fr
+        cid = cid_fr
         init_bal = balances["cust_bal"] + balances["merch_bal"]
         cust_bal = init_bal / 1000000
         merch_bal = 0
@@ -93,12 +117,11 @@ def scenario_cust_close(contract_path, pubkey, message, signature, balances):
         # Balance in mutez as bytes
         cust_bal_b = cust_bal_fr 
         merch_bal_b = merch_bal_fr 
-        rev_lock0 = "0x1f98c84caf714d00ede5d23142bc166d84f8cd42adc18be22c3d47453853ea49"
+        rev_lock0 = "0x00"
         # self_delay = 86400    # seconds in 1 day (60*60*24)
         self_delay = 3
-
         # Originate zkchannel contract (without funding)
-        initial_storage = form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey, close_hash)
+        initial_storage = form_initial_storage(cid, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey, close_flag)
         args = ["--init", initial_storage, "--burn-cap", burncap]
         sandbox.client(0).originate(contract_name, 0, "bootstrap1", contract, args)
         
@@ -130,14 +153,14 @@ def scenario_cust_close(contract_path, pubkey, message, signature, balances):
 
         # Merchant initiates merch close
         sandbox.client(0).transfer(0, 'bootstrap2', contract_name,
-                                   ['--entrypoint', 'merchClose',
+                                   ['--entrypoint', 'expiry',
                                     '--burn-cap', burncap])
 
         sandbox.client(0).bake('bootstrap5', BAKE_ARGS)
         time.sleep(1)
 
         merch_current_bal = sandbox.client(0).get_balance(merch_addr)
-        entrypoint_cost["merchClose"]  = merch_old_bal - merch_current_bal
+        entrypoint_cost["expiry"]  = merch_old_bal - merch_current_bal
 
         # A final payment happens - Merchant signs off on chanID, balances,
         # revlock (and for now addresses, although that may change)
@@ -147,11 +170,12 @@ def scenario_cust_close(contract_path, pubkey, message, signature, balances):
         new_merch_bal_mt = int(new_merch_bal * 1000000)        
         rev_lock_final = rev_lock_fr
 
-        # sample signature, merch-pk and g2 
-        s1 = sig_s1 
-        s2 = sig_s2 
-
-        storage = 'Pair (Pair {custBal} {merchBal}) {rev_lock_final} {s1} {s2}'.format(s1=s1, s2=s2, rev_lock_final=rev_lock_final, custBal=new_cust_bal_mt, merchBal=new_merch_bal_mt)
+        storage = 'Pair (Pair {custBal} {merchBal}) {rev_lock_final} {s1} {s2}'.format(
+            s1=s1, 
+            s2=s2, 
+            rev_lock_final=rev_lock_final, 
+            custBal=new_cust_bal_mt, 
+            merchBal=new_merch_bal_mt)
 
         # Customer broadcasts custClose with the merchant's signature
         sandbox.client(0).transfer(0, 'bootstrap1', contract_name,
@@ -184,7 +208,7 @@ def scenario_cust_close(contract_path, pubkey, message, signature, balances):
         # Make sure every tez has been accounted for
         assert cust_bal_start == (
             current_bal
-            + sum(entrypoint_cost.values()) - entrypoint_cost["merchClose"]
+            + sum(entrypoint_cost.values()) - entrypoint_cost["expiry"]
             + cust_bal
             - new_cust_bal
             )
@@ -219,11 +243,10 @@ def scenario_mutual_close(contract_path, pubkey):
 
         # Define initial storage and channel variables
         contract = contract_path + "zkchannel_contract.tz"
-        chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
-        sig_s1, sig_s2 = signature
+        cid_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_flag = message
 
         contract_name = "my_zkchannel"
-        chan_id = chan_id_fr
+        cid = cid_fr
         init_bal = balances["cust_bal"] + balances["merch_bal"]
         cust_bal = init_bal / 1000000
         merch_bal = 0
@@ -232,12 +255,12 @@ def scenario_mutual_close(contract_path, pubkey):
         # Balance in mutez as bytes
         cust_bal_b = cust_bal_fr 
         merch_bal_b = merch_bal_fr 
-        rev_lock0 = "0x1f98c84caf714d00ede5d23142bc166d84f8cd42adc18be22c3d47453853ea49"
+        rev_lock0 = "0x00"
         # self_delay = 86400    # seconds in 1 day (60*60*24)
         self_delay = 3
 
         # Originate zkchannel contract (without funding)
-        initial_storage = form_initial_storage(chan_id, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey, close_hash)
+        initial_storage = form_initial_storage(cid, cust_addr, cust_pk, merch_addr, merch_pk, cust_bal_mt, merch_bal_mt, rev_lock0, self_delay, pubkey, close_flag)
         args = ["--init", initial_storage, "--burn-cap", burncap]
         sandbox.client(0).originate(contract_name, 0, "bootstrap1", contract, args)
         
@@ -267,19 +290,30 @@ def scenario_mutual_close(contract_path, pubkey):
         entrypoint_cost["addFunding"] = old_bal - cust_bal - current_bal
 
         # Create the mutual close state that customer and merchant settle on
-        new_cust_bal = 19960 / 1000000
-        new_merch_bal = 1040 / 1000000
+        new_cust_bal = 18
+        new_merch_bal = 12
         new_cust_bal_mt = int(new_cust_bal * 1000000)
         new_merch_bal_mt = int(new_merch_bal * 1000000)
-        mutual_state = form_mutual_state(chan_id, cust_addr, merch_addr, new_cust_bal_mt, new_merch_bal_mt)
+        contract_addr = sandbox.client(0).get_contract_address(contract_name)
+        
+        mutual_state = '(Pair (Pair {cid} \"{context_string}\") (Pair \"{contract_addr}\" (Pair {new_cust_bal_mt} {new_merch_bal_mt} )))'.format(
+            cid=cid, 
+            context_string=CONTEXT_STRING, 
+            contract_addr=contract_addr, 
+            new_cust_bal_mt=new_cust_bal_mt, 
+            new_merch_bal_mt=new_merch_bal_mt
+        )
 
-        # Cust and Merch signs off on mutual close state
-        mutual_type = 'pair (pair bls12_381_fr address) (pair mutez (pair address mutez))'
+        # Merch signs off on mutual close state
+        mutual_type = 'pair (pair bls12_381_fr string) (pair address (pair mutez mutez))'
+
         packed = sandbox.client(0).pack(mutual_state, mutual_type)
-        cust_sig = sandbox.client(0).sign_bytes_of_string(packed, "bootstrap1")
         merch_sig = sandbox.client(0).sign_bytes_of_string(packed, "bootstrap2")
 
-        storage = '(Pair (Pair {cust_bal_mt} \"{cust_sig}\") (Pair {merch_bal_mt} \"{merch_sig}\"))'.format(cust_sig=cust_sig, merch_sig=merch_sig, cust_bal_mt=new_cust_bal_mt, merch_bal_mt=new_merch_bal_mt)
+        storage = '(Pair {cust_bal_mt} (Pair {merch_bal_mt} \"{merch_sig}\"))'.format(
+            merch_sig=merch_sig, 
+            cust_bal_mt=new_cust_bal_mt, 
+            merch_bal_mt=new_merch_bal_mt)
 
         sandbox.client(0).transfer(0, 'bootstrap1', contract_name,
                                    ['--entrypoint', 'mutualClose',
@@ -321,5 +355,3 @@ if __name__ == "__main__":
 
     scenario_cust_close(contract_path, merch_pk, message, signature, balances)
     scenario_mutual_close(contract_path, merch_pk)
-
-
