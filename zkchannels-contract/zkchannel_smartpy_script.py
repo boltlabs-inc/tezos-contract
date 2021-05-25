@@ -65,7 +65,7 @@ class ZkChannel(sp.Contract):
  
     # addFunding is called by the customer or the merchant to fund their
     # portion of the channel (according to the amounts specified in custFunding
-    # and merchFunding).
+    # and merchFunding). The full amount must be funded in one transaction.
     @sp.entry_point
     def addFunding(self):
         sp.verify(self.data.status == AWAITING_FUNDING)
