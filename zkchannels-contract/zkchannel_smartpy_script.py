@@ -3,7 +3,7 @@ import smartpy as sp
 import smartpy_michelson as mi
  
 # sample inputs for scenario tests
-CHAN_ID_FR = "0x33f838822da941fbae05f60aa52a1b34ce8f75199a0ec82e44de8c71c0d5d33a"
+CID_FR = "0x33f838822da941fbae05f60aa52a1b34ce8f75199a0ec82e44de8c71c0d5d33a"
 REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef742"
 SIG_S1_G1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49aaf"
 SIG_S2_G1 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d6d"
@@ -14,17 +14,17 @@ MERCH_PK2_G2 = "0x01fee6b4807855ec81e09dcd9bf44fb0eb0303ffd2430779eeb351d83c52a4
 MERCH_PK3_G2 = "0x0c0059043d9805bb179d241f4a9e92b71ffee88a2abf618b8a2fc4bdb7f60a892d47aca80527f217f0fc80184523b4911056fd8c116be111df38e4b606ddd0acfe8bc6ac252916d8f62cb739d6fb92f3ce67fe832a3d81c18580cf33223f36590a3ffb4500e2857e45726b0ac1e55fb162c61f71c4b6530272498a29b7b1b4762b1f05a58a079362886eb1bc4e6f22831861849ba23abc32cc1eb098cf75ee2588367f998e2c7bb9e3789980d424663978f2999578094e6e0ad5c788dbdc75a5"
 MERCH_PK4_G2 = "0x051678c8a430375dc1782e41ae333f44d005961c8bffbcc0262bf0b42691ac2538fe7268b1eb37b253ee1848969c3f60142237a81dc49be3cd02cc3c461436840f70383b8742ac2b9f41715ddb6ea557de34f8edcf54c2fcfd8e2fcab78f8060175c94f077627d826aebcd44b22ec22004ecffc1c7a2dfa7b7ff510110df78df6f8f17c38346e07022d7073febb339c6082d97caf8ed1c50cd6d28a15752f72b296bb21c614bf7c9c0ce17639bce60b274596df53e08eec16f441e75a243626e"
 MERCH_PK5_G2 = "0x186320ca37e72d3d54d8dec102289123afd9ff4c754b381f70fbedd44dad172ebe138f904b4ab75cf04073e19a43896f02c89b5bdae1b4ae12897697631c5e8cbafd2561b87b26546b899fb19f31a3421e6a4a16287ce1c66b62338e656fa2511812a67080cad41a0d63a96c88adef5bb365f893f056795468548fdaa09158a51861d82e15533804b7fde7f4940730cd12e39b220a07bef5a581f9612a3f70d57a9e63cf45b1ce58ec0f6491b8e8ef5571fe2583e8b08c67aedd632fcc4d2868"
-HASH_CLOSE_B = "0x365d084a3d3a3d810606983a7690a8a119bacad72340122fa3449b1400f20f31"
+CLOSE_FLAG_B = "0x365d084a3d3a3d810606983a7690a8a119bacad72340122fa3449b1400f20f31"
  
 AWAITING_FUNDING = 0
 OPEN = 1
-MERCH_CLOSE = 2
+EXPIRY = 2
 CUST_CLOSE = 3
 CLOSED = 4
  
 ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
-# chanID is a unique identifier for the channel.
+# cid is a unique identifier for the channel.
 # Addresses are used both for interacting with contract, and receiving payouts.
 # Public keys are used for verifying signatures required for certain state transitions.
 # revLock is the revocation lock used to punish a customer who broadcasts a revoked custState.
@@ -38,9 +38,9 @@ class ZkChannel(sp.Contract):
         packed_zero = sp.to_constant(sp.pack(sp.bls12_381_g1(ZERO_IN_G1)))
         sp.result(packed_s1 != packed_zero)
 
-    def __init__(self, chanID, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB):
+    def __init__(self, cid, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag):
         self.init(
-                  chanID            = chanID,
+                  cid               = cid,
                   custAddr          = custAddr,
                   merchAddr         = merchAddr,
                   custPk            = custPk,
@@ -50,7 +50,7 @@ class ZkChannel(sp.Contract):
                   custFunding       = custFunding,
                   merchFunding      = merchFunding,
                   status            = sp.nat(AWAITING_FUNDING),
-                  revLock           = revLock,
+                  revLock           = sp.bytes("0x00"),
                   selfDelay         = selfDelay,
                   delayExpiry       = sp.timestamp(0),
                   g2                = g2,
@@ -60,7 +60,8 @@ class ZkChannel(sp.Contract):
                   merchPk3          = merchPk3,
                   merchPk4          = merchPk4,
                   merchPk5          = merchPk5,
-                  hashCloseB        = hashCloseB)
+                  close_flag        = close_flag,
+                  context_string    = sp.string("zkChannels mutual close"))
  
     # addFunding is called by the customer or the merchant to fund their
     # portion of the channel (according to the amounts specified in custFunding
@@ -68,11 +69,14 @@ class ZkChannel(sp.Contract):
     @sp.entry_point
     def addFunding(self):
         sp.verify(self.data.status == AWAITING_FUNDING)
+        sp.verify((self.data.custAddr == sp.sender) | (self.data.merchAddr == sp.sender))
         sp.if self.data.custAddr == sp.sender:
             sp.verify(sp.amount == self.data.custFunding)
+            sp.verify(self.data.custBal == sp.tez(0))
             self.data.custBal = self.data.custFunding
         sp.if self.data.merchAddr == sp.sender:
             sp.verify(sp.amount == self.data.merchFunding)
+            sp.verify(self.data.merchBal == sp.tez(0))
             self.data.merchBal = self.data.merchFunding
         # If cust and merch Balances have been funded, mark the channel as open.
         sp.if ((self.data.custBal == self.data.custFunding) & (self.data.merchBal == self.data.merchFunding)):
@@ -93,23 +97,23 @@ class ZkChannel(sp.Contract):
             sp.send(self.data.merchAddr, self.data.merchBal)
             self.data.merchBal = sp.tez(0)
  
-    # merchClose can be called by the merchant to initiate channel closure.
+    # expiry can be called by the merchant to initiate channel closure.
     # The customer should call custClose using the latest state. Otherwise,
     # after the delay expires, the merchant will be able to claim all the
     # funds in the channel using merchClaim.
     @sp.entry_point
-    def merchClose(self):
+    def expiry(self):
         sp.verify(self.data.merchAddr == sp.sender)
         sp.verify(self.data.status == OPEN)
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
-        self.data.status = MERCH_CLOSE
+        self.data.status = EXPIRY
  
     # merchClaim can be called by the merchant if the customer has not called
     # custClose before the delay period has expired.
     @sp.entry_point
     def merchClaim(self):
         sp.verify(self.data.merchAddr == sp.sender)
-        sp.verify(self.data.status == MERCH_CLOSE)
+        sp.verify(self.data.status == EXPIRY)
         sp.verify(self.data.delayExpiry < sp.now)
         sp.send(self.data.merchAddr, self.data.custBal + self.data.merchBal)
         self.data.custBal = sp.tez(0)
@@ -117,15 +121,9 @@ class ZkChannel(sp.Contract):
         self.data.status = CLOSED
 
     @sp.entry_point
-    def custClose(self, params):
+    def custClose(self, custBal, merchBal, revLock, s1, s2):
         sp.verify(self.data.custAddr == sp.sender)
-        sp.verify((self.data.status == OPEN) | (self.data.status == MERCH_CLOSE))
-        # custClose inputs
-        custBal = params.custBal
-        merchBal = params.merchBal
-        revLock = params.revLock
-        s1 = params.s1
-        s2 = params.s2
+        sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
         # Fail if s1 is set to 0
         sp.verify(self.is_g1_not_zero(s1))
         # Prepare pairing check inputs
@@ -136,8 +134,8 @@ class ZkChannel(sp.Contract):
         Y3 = self.data.merchPk3
         Y4 = self.data.merchPk4
         X = self.data.merchPk5
-        chanID = self.data.chanID
-        close_b = self.data.hashCloseB
+        cid = self.data.cid
+        close_b = self.data.close_flag
         cust_b = sp.local('cust_b', sp.fst(sp.ediv(custBal, sp.mutez(1)).open_some()))
         one = sp.local('one', sp.bls12_381_fr("0x01"))
         cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, one.value))
@@ -147,7 +145,7 @@ class ZkChannel(sp.Contract):
         rev_lock_b = sp.local('rev_lock_b', sp.unpack(revLockConcat.value, t = sp.TBls12_381_fr).open_some())
         # Verify PS signature against the message
         pk = [Y0, Y1, Y2, Y3, Y4]
-        msg = [chanID, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value, close_b]
+        msg = [cid, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value, close_b]
         prod1 = sp.local('prod1', X)
         for i in range(0, len(msg)):
             prod1.value += sp.mul(pk[i], msg[i])
@@ -156,7 +154,9 @@ class ZkChannel(sp.Contract):
         self.data.custBal = custBal
         self.data.revLock = revLock
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
-        sp.send(self.data.merchAddr, merchBal)
+        # Pay merchant immediately (unless amount is 0)
+        sp.if merchBal != sp.tez(0):
+            sp.send(self.data.merchAddr, merchBal)
         self.data.merchBal = sp.tez(0)
         self.data.status = CUST_CLOSE
  
@@ -164,7 +164,7 @@ class ZkChannel(sp.Contract):
     # to the latest custClose state. If the secret is valid, the merchant will
     # receive the customer's balance too.
     @sp.entry_point
-    def merchDispute(self, params):
+    def merchDispute(self, secret):
         sp.verify(self.data.merchAddr == sp.sender)
         sp.verify(self.data.status == CUST_CLOSE)
         
@@ -173,7 +173,7 @@ class ZkChannel(sp.Contract):
         sp.for i in sp.range(0, 32):
             revlock_be.value.push(sp.slice(self.data.revLock, i, 1).open_some())
             
-        sp.verify(sp.concat(revlock_be.value) == sp.sha256(params.secret))
+        sp.verify(sp.concat(revlock_be.value) == sp.sha3(secret))
         sp.send(self.data.merchAddr, self.data.custBal)
         self.data.custBal = sp.tez(0)
         self.data.status = CLOSED
@@ -193,36 +193,25 @@ class ZkChannel(sp.Contract):
     # allows for an instant withdrawal of the funds. mutualClose requires
     # a signature from the merchant and the customer on the final state.
     @sp.entry_point
-    def mutualClose(self, params):
+    def mutualClose(self, custBal, merchBal, merchSig):
+        sp.verify(self.data.custAddr == sp.sender)
         sp.verify(self.data.status == OPEN)
-        # Check customer signature
-        sp.verify(sp.check_signature(self.data.custPk,
-                                     params.custSig,
-                                     sp.pack(sp.record(
-                                             chanID = self.data.chanID,
-                                             custAddr = self.data.custAddr,
-                                             merchAddr = self.data.merchAddr,
-                                             custBal = params.custBal,
-                                             merchBal = params.merchBal)
-                                            )
-                                    ))
         # Check merchant signature
         sp.verify(sp.check_signature(self.data.merchPk,
-                                     params.merchSig,
+                                     merchSig,
                                      sp.pack(sp.record(
-                                             chanID = self.data.chanID,
-                                             custAddr = self.data.custAddr,
-                                             merchAddr = self.data.merchAddr,
-                                             custBal = params.custBal,
-                                             merchBal = params.merchBal)
+                                             contract_id = sp.self_address,
+                                             context_string = self.data.context_string,
+                                             cid = self.data.cid,
+                                             custBal = custBal,
+                                             merchBal = merchBal)
                                             )
                                     ))
-        self.data.custBal = params.custBal
-        self.data.merchBal = params.merchBal
-        sp.send(self.data.custAddr, self.data.custBal)
-        sp.send(self.data.merchAddr, self.data.merchBal)
-        self.data.custBal = sp.tez(0)
-        self.data.merchBal = sp.tez(0)
+        # Payout balances (unless amount is 0)
+        sp.if custBal != sp.tez(0):
+            sp.send(self.data.custAddr, custBal)
+        sp.if merchBal != sp.tez(0):
+            sp.send(self.data.merchAddr, merchBal)
         self.data.status = CLOSED
  
  
@@ -241,11 +230,10 @@ def test():
     scenario.show([aliceCust, bobMerch])
  
     # Set zkChannel parameters
-    chanID = sp.bls12_381_fr(CHAN_ID_FR)
-    hashCloseB = sp.bls12_381_fr(HASH_CLOSE_B)
+    cid = sp.bls12_381_fr(CID_FR)
+    close_flag = sp.bls12_381_fr(CLOSE_FLAG_B)
     custAddr = aliceCust.address
     merchAddr = bobMerch.address
-    revLock = sp.sha256(sp.bytes("0x12345678aabb"))
     # selfDelay = 60*60*24 # seconds in one day - 86,400
     selfDelay = 3 # seconds in one day - 86,400
     scenario.h2("On-chain installment")
@@ -259,15 +247,15 @@ def test():
     merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
     merchPk5 = sp.bls12_381_g2(MERCH_PK5_G2)
 
-    scenario.h2("Scenario 1: escrow -> merchClose -> merchClaim")
+    scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
-    c1 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
+    c1 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c1
     scenario.h3("Funding the channel")
     scenario += c1.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c1.addFunding().run(sender = bobMerch, amount = merchFunding)
-    scenario.h3("merchClose")
-    scenario += c1.merchClose().run(sender = bobMerch)
+    scenario.h3("expiry")
+    scenario += c1.expiry().run(sender = bobMerch)
     scenario.h3("unsuccessful merchClaim before delay period")
     scenario += c1.merchClaim().run(sender = bobMerch, now = sp.timestamp(1), valid = False)
     scenario.h3("successful merchClaim after delay period")
@@ -275,7 +263,7 @@ def test():
  
     scenario.h2("Scenario 2: escrow -> custClose -> custClaim")
     scenario.h3("escrow")
-    c2 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
+    c2 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c2
     scenario.h3("Funding the channel")
     scenario += c2.addFunding().run(sender = aliceCust, amount = custFunding)
@@ -300,13 +288,13 @@ def test():
  
     scenario.h2("Scenario 3: escrow -> custClose -> merchDispute")
     scenario.h3("escrow")
-    c3 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
+    c3 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c3
     scenario.h3("Funding the channel")
     scenario += c3.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c3.addFunding().run(sender = bobMerch, amount = merchFunding)
     scenario.h3("custClose")
-    revLock2 = sp.bytes(REV_LOCK_FR) # sp.sha256(sp.bytes("0x12345678aacc"))
+    revLock2 = sp.bytes(REV_LOCK_FR) # sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c3.custClose(
         revLock = revLock2, 
         custBal = custBal, 
@@ -317,17 +305,17 @@ def test():
     scenario.h3("merchDispute called with correct secret")
     # scenario += c3.merchDispute(secret = sp.bytes("0x12345678aacc")).run(sender = bobMerch, now = sp.timestamp(10))
  
-    scenario.h2("Scenario 4: escrow -> merchClose -> custClose")
+    scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
-    c4 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
+    c4 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c4
     scenario.h3("Funding the channel")
     scenario += c4.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c4.addFunding().run(sender = bobMerch, amount = merchFunding)
-    scenario.h3("merchClose")
-    scenario += c4.merchClose().run(sender = bobMerch)
+    scenario.h3("expiry")
+    scenario += c4.expiry().run(sender = bobMerch)
     scenario.h3("custClose")
-    revLock3 = sp.sha256(sp.bytes("0x12345678aacc"))
+    revLock3 = sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c4.custClose(
         revLock = revLock2, 
         custBal = custBal, 
@@ -344,30 +332,24 @@ def test():
  
     scenario.h2("Scenario 5: escrow -> mutualClose")
     scenario.h3("escrow")
-    c5 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
+    c5 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c5
     scenario.h3("Funding the channel")
     scenario += c5.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c5.addFunding().run(sender = bobMerch, amount = merchFunding)
-    # Customer's signature on the latest state
-    custSig = sp.make_signature(aliceCust.secret_key, sp.pack(sp.record(chanID = chanID,
-                                                                  custAddr = custAddr,
-                                                                  merchAddr = merchAddr,
-                                                                  custBal = custBal,
-                                                                  merchBal = merchBal)))
- 
     # Merchant's signature on the latest state
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(chanID = chanID,
-                                                                  custAddr = custAddr,
-                                                                  merchAddr = merchAddr,
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c5.address,
+                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
     scenario.h3("mutualClose")
-    scenario += c5.mutualClose(custBal = custBal, merchBal = merchBal, custSig = custSig,  merchSig = merchSig).run(sender = aliceCust)
+    scenario += c5.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust)
  
     scenario.h2("Scenario 6: escrow -> addCustFunding -> reclaimCustFunding")
     scenario.h3("escrow")
-    c6 = ZkChannel(chanID, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, revLock, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, hashCloseB)
+    c6 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c6
     scenario.h3("Customer Funding their side of the channel")
     scenario += c6.addFunding().run(sender = aliceCust, amount = custFunding)
