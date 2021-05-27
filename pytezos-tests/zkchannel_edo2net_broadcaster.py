@@ -2,6 +2,7 @@
 # python3 zkchannel_edo2net_broadcaster.py --contract=zkchannel_contract.tz --cust=tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json --merch=tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json --custclose=cust_close.json --merchclose=merch_close.json 
 
 import argparse
+from pprint import pprint
 from pytezos import pytezos
 from pytezos import Contract
 from pytezos import ContractInterface
@@ -49,83 +50,40 @@ def get_cust_close_token(data):
 def convert_mt_to_tez(balance):
     return str(int(balance) /1000000)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--shell", "-n", help="the address to connect to edo2net", default = "https://rpc.tzkt.io/edo2net/")
-    parser.add_argument("--contract", "-z", help="zkchannels michelson contract")
-    parser.add_argument("--cust", "-c", help="customer's testnet account json file")
-    parser.add_argument("--merch", "-m", help="merchant's testnet account json file")
-    parser.add_argument("--custclose", "-cc", help="Enter the filename (with path) to the cust_close.json file created by zkchannels-cli")
-    parser.add_argument("--merchclose", "-mc", help="Enter the filename (with path) to the merch_close.json file created by zkchannels-cli")
-    args = parser.parse_args()
-
-    if args.shell:
-        pytezos = pytezos.using(shell=args.shell)
-    print("Connecting to edo2net via: " + args.shell)
-
-    if args.cust:
-       cust_acc = args.cust
-    else:
-        cust_acc = "tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json"
-
-    if args.merch:
-        merch_acc = args.merch
-    else:
-        merch_acc = "tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json"
-
-    if args.custclose:
-        cust_close_file = args.custclose
-    else:
-        cust_close_file="cust_close.json"
-
-    if args.merchclose:
-        merch_close_file = args.merchclose
-    else:
-        merch_close_file="merch_close.json"
+class FeeTracker:
+    def __init__(self):
+        self.fees = []
     
+    def add_result(self, op_name, result):
+        """Add the fees of the fees from operation result to self.fees"""
+        # pprint(result)
+        fee = int(result['contents'][0]['fee'])
+        storage_bytes = int(result['contents'][0]['storage_limit'])
+        storage_cost = int(storage_bytes) * 250 # 250 mutez per storage byte on edo
+        gas = int(result['contents'][0]['gas_limit'])
+        total_cost = fee + storage_cost
+        fee = {"total_cost":total_cost, "fee":fee, "storage_bytes":storage_bytes, "storage_cost":storage_cost, "gas":gas}
+        self.fees.append({op_name:fee})
 
-    # Set customer and merch pytezos interfaces
-    cust_py = pytezos.using(key=cust_acc)
-    cust_addr = read_json_file(cust_acc)['pkh']
-    merch_py = pytezos.using(key=merch_acc)
-    merch_addr = read_json_file(merch_acc)['pkh']
+    def print_fees(self):
+        pprint(self.fees)
 
-    cust_close_json = read_json_file(cust_close_file)
-    merch_close_json = read_json_file(merch_close_file)
+def add_cust_funding(ci):
+    print("Adding cust funding")
+    out = ci.addFunding().with_amount(20000000).inject(_async=False)
+    print("cust addFunding ophash: ", out['hash'])
+    return out
 
-    # load zchannel contracts
-    main_code = ContractInterface.from_file(args.contract)
+def add_merch_funding(ci):
+    print("Adding merch funding")
+    out = ci.addFunding().with_amount(10000000).inject(_async=False)
+    print("merch addFunding ophash: ", out['hash'])
+    return out
 
-    # Activate cust and merch testnet accounts
-    try:
-        print("Activating cust account")
-        cust_py.activate_account().fill().sign().inject()
-    except:
-        print("Cust account already activated")
-
-    try:
-        print("Revealing cust pubkey")
-        out = cust_py.reveal().autofill().sign().inject()
-    except:
-        pass
-    cust_pubkey = cust_py.key.public_key()
-
-    try:
-        print("Activating merch account")
-        merch_py.activate_account().fill().sign().inject()
-    except: 
-        print("Merch account already activated")
-
-    try:
-        print("Revealing merch pubkey")
-        out = merch_py.reveal().autofill().sign().inject()
-    except:
-        pass
-    merch_pubkey = merch_py.key.public_key()
-
+def originate(cust_py, cust_close_json):
     # Create initial storage for main zkchannel contract
-    (pubkey, message, signature) = get_cust_close_token(cust_close_json)
-    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_flag = message
+    (pubkey, message, _) = get_cust_close_token(cust_close_json)
+    chan_id_fr, _, _, _, close_flag = message
 
     g2 = pubkey.get("g2") 
     merchPk0 = pubkey.get("Y0") 
@@ -166,31 +124,12 @@ if __name__ == "__main__":
     opg = pytezos.shell.blocks[-20:].find_operation(out['hash'])
     main_id = opg['contents'][0]['metadata']['operation_result']['originated_contracts'][0]
     print("zkChannel contract address: ", main_id)
+    return out, main_id
 
-
-    watchtower_command = "python3 passive_zkchannel_watchtower.py --contract {cid} --network {shell} --identity merchant".format(cid=main_id, shell=args.shell)
-    print("Run the watchtower with \n" + watchtower_command)
-    # input("Press enter to continue")
-
-    # Set contract interfaces for cust and merch
-    cust_ci = cust_py.contract(main_id)
-    merch_ci = merch_py.contract(main_id)
-
-    print("Adding customer funding")
-    out = cust_ci.addFunding().with_amount(20000000).inject(_async=False)
-    print("Cust Add Funding ophash: ", out['hash'])
-
-    print("Adding merchant funding")
-    out = merch_ci.addFunding().with_amount(10000000).inject(_async=False)
-    print("Merch Add Funding ophash: ", out['hash'])
-
-    # print("Broadcasting Expiry")
-    # out = merch_ci.expiry().inject(_async=False)
-    # print("Expiry ophash: ", out['hash'])
-
+def cust_close(ci, cust_close_json):
     # Form cust close storage
-    (pubkey, message, signature) = get_cust_close_token(cust_close_json)
-    chan_id_fr, rev_lock_fr, cust_bal_fr, merch_bal_fr, close_hash = message
+    (_, message, signature) = get_cust_close_token(cust_close_json)
+    _, rev_lock_fr, _, _, _ = message
     s1, s2 = signature
     new_cust_bal_mt = cust_close_json["message"]["cust_bal"]
     new_merch_bal_mt = cust_close_json["message"]["merch_bal"]
@@ -206,20 +145,119 @@ if __name__ == "__main__":
     }
 
     print("Broadcasting Cust Close")
-    out = cust_ci.custClose(close_storage).inject(_async=False)
+    out = ci.custClose(close_storage).inject(_async=False)
     print("Cust Close ophash: ", out['hash'])
+    return out
 
-    print("Dry run of Merch Dispute")
-    rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
-    out = merch_ci.merchDispute(rev_secret).run_operation()
-    rev_secret_is_valid = len(out.operations) > 0
-    if rev_secret_is_valid:
-        print("rev_secret was valid!")
+def merch_dispute(ci, entrypoint, rev_secret):
+    print('Broadcasting {}'.format(entrypoint))
+    import pdb; pdb.set_trace()
+    cmd = 'ci.{e}(\"{r}\").inject(_async=False)'.format(e=entrypoint, r=rev_secret)
+    out = eval(cmd)
+    print("{} ophash: ".format(entrypoint), out['hash'])
+    return out
 
-    print("Broadcasting Cust Claim")
-    out = cust_ci.custClaim().inject()
-    print("Cust Claim ophash: ", out['hash'])
+def broadcast(ci, entrypoint):
+    print('Broadcasting {}'.format(entrypoint))
+    cmd = 'ci.{}().inject(_async=False)'.format(entrypoint)
+    out = eval(cmd)
+    print("{} ophash: ".format(entrypoint), out['hash'])
+    return out
 
-    assert(rev_secret_is_valid)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--shell", "-n", required=False, help="the address to connect to edo2net", default = "https://rpc.tzkt.io/edo2net/")
+    parser.add_argument("--contract", "-z", required=True, help="zkchannels michelson contract")
+    parser.add_argument("--cust", "-c", required=True, help="customer's testnet account json file")
+    parser.add_argument("--merch", "-m", required=True, help="merchant's testnet account json file")
+    parser.add_argument("--custclose", "-cc", required=True, help="Enter the filename (with path) to the cust_close.json file created by zkchannels-cli")
+    parser.add_argument("--merchclose", "-mc", required=True, help="Enter the filename (with path) to the merch_close.json file created by zkchannels-cli")
+    args = parser.parse_args()
+
+    if args.shell:
+        pytezos = pytezos.using(shell=args.shell)
+    print("Connecting to edo2net via: " + args.shell)
+    cust_acc = args.cust
+    merch_acc = args.merch
+    cust_close_file = args.custclose
+    merch_close_file = args.merchclose
+
+    # Set customer and merch pytezos interfaces
+    cust_py = pytezos.using(key=cust_acc)
+    cust_addr = read_json_file(cust_acc)['pkh']
+    merch_py = pytezos.using(key=merch_acc)
+    merch_addr = read_json_file(merch_acc)['pkh']
+
+    cust_close_json = read_json_file(cust_close_file)
+    merch_close_json = read_json_file(merch_close_file)
+
+    # load zchannel contracts
+    main_code = ContractInterface.from_file(args.contract)
+
+    # Activate cust and merch testnet accounts
+    try:
+        print("Activating cust account")
+        cust_py.activate_account().fill().sign().inject()
+    except:
+        print("Cust account already activated")
+
+    try:
+        print("Revealing cust pubkey")
+        out = cust_py.reveal().autofill().sign().inject()
+    except:
+        pass
+    cust_pubkey = cust_py.key.public_key()
+
+    try:
+        print("Activating merch account")
+        merch_py.activate_account().fill().sign().inject()
+    except: 
+        print("Merch account already activated")
+
+    try:
+        print("Revealing merch pubkey")
+        out = merch_py.reveal().autofill().sign().inject()
+    except:
+        pass
+    merch_pubkey = merch_py.key.public_key()
+
+    out, main_id = originate(cust_py, cust_close_json)
+    feetracker = FeeTracker()
+    feetracker.add_result('originate', out)
+
+    # watchtower_command = "python3 passive_zkchannel_watchtower.py --contract {cid} --network {shell} --identity merchant".format(cid=main_id, shell=args.shell)
+    # print("Run the watchtower with \n" + watchtower_command)
+    # input("Press enter to continue")
+
+    # Set contract interfaces for cust and merch
+    cust_ci = cust_py.contract(main_id)
+    merch_ci = merch_py.contract(main_id)
+
+    out = add_cust_funding(cust_ci)
+    feetracker.add_result('addFunding', out)
+
+    # out = broadcast(cust_ci, 'reclaimFunding')
+    # feetracker.add_result('reclaimFunding', out)
+    # out = add_cust_funding(cust_ci)
+
+    out = add_merch_funding(merch_ci)
+
+    out = broadcast(merch_ci, 'expiry')
+    feetracker.add_result('expiry', out)
+
+    out = broadcast(merch_ci, 'merchClaim')
+    feetracker.add_result('merchClaim', out)
+
+    # out = cust_close(cust_ci, cust_close_json)
+    # feetracker.add_result('custClose', out)
+
+    # rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
+    # out = merch_dispute(merch_ci, 'merchDispute', rev_secret)
+    # feetracker.add_result('merchDispute', out)
+
+    # out = broadcast(cust_ci, 'custClaim')
+    # feetracker.add_result('custClaim', out)
+
+    feetracker.print_fees()
 
     print("Tests finished!")
