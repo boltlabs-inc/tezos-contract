@@ -25,7 +25,7 @@ CLOSED = 4
 ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
 # cid is a unique identifier for the channel.
-# Addresses are used both for interacting with contract, and receiving payouts.
+# Addresses are used both for interacting with contract, and receiving payouts. Addresses must be for implicit accounts (tz1) only, not smart contracts.
 # Public keys are used for verifying signatures required for certain state transitions.
 # revLock is the revocation lock used to punish a customer who broadcasts a revoked custState.
 # selfDelay defines the delay (in seconds) during which the other party can counter specific state transitions.
@@ -155,6 +155,7 @@ class ZkChannel(sp.Contract):
         self.data.revLock = revLock
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
         # Pay merchant immediately (unless amount is 0)
+        # Note that all addresses must be implicit accounts (tz1), not smart contracts
         sp.if merchBal != sp.tez(0):
             sp.send(self.data.merchAddr, merchBal)
         self.data.merchBal = sp.tez(0)
@@ -208,6 +209,7 @@ class ZkChannel(sp.Contract):
                                             )
                                     ))
         # Payout balances (unless amount is 0)
+        # Note that all addresses must be implicit accounts (tz1), not smart contracts
         sp.if custBal != sp.tez(0):
             sp.send(self.data.custAddr, custBal)
         sp.if merchBal != sp.tez(0):
