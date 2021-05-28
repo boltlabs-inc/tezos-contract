@@ -59,7 +59,7 @@ class FeeTracker:
         # pprint(result)
         fee = int(result['contents'][0]['fee'])
         storage_bytes = int(result['contents'][0]['storage_limit'])
-        storage_cost = int(storage_bytes) * 250 # 250 mutez per storage byte on edo
+        storage_cost = int(storage_bytes) * 250 # 250 mutez per storage_bytes byte on edo
         gas = int(result['contents'][0]['gas_limit'])
         total_cost = fee + storage_cost
         fee = {"total_cost":total_cost, "fee":fee, "storage_bytes":storage_bytes, "storage_cost":storage_cost, "gas":gas}
@@ -68,19 +68,13 @@ class FeeTracker:
     def print_fees(self):
         pprint(self.fees)
 
-def add_cust_funding(ci):
-    print("Adding cust funding")
-    out = ci.addFunding().with_amount(20000000).inject(_async=False)
-    print("cust addFunding ophash: ", out['hash'])
+def add_funding(ci, amt):
+    print("Adding funds ({})".format(amt))
+    out = ci.addFunding().with_amount(amt).inject(_async=False)
+    print("addFunding ophash: ", out['hash'])
     return out
 
-def add_merch_funding(ci):
-    print("Adding merch funding")
-    out = ci.addFunding().with_amount(10000000).inject(_async=False)
-    print("merch addFunding ophash: ", out['hash'])
-    return out
-
-def originate(cust_py, cust_close_json):
+def originate(cust_py, cust_close_json, cust_funding, merch_funding):
     # Create initial storage for main zkchannel contract
     (pubkey, message, _) = get_cust_close_token(cust_close_json)
     chan_id_fr, _, _, _, close_flag = message
@@ -98,13 +92,13 @@ def originate(cust_py, cust_close_json):
     'context_string': "zkChannels mutual close",
     'custAddr': cust_addr, 
     'custBal':0, 
-    'custFunding': 20000000, 
+    'custFunding': cust_funding, 
     'custPk': cust_pubkey, 
     'delayExpiry': '1970-01-01T00:00:00Z', 
     'g2':g2,
     'merchAddr': merch_addr, 
     'merchBal': 0, 
-    'merchFunding': 10000000, 
+    'merchFunding': merch_funding, 
     'merchPk': merch_pubkey, 
     'merchPk0': merchPk0,
     'merchPk1': merchPk1,
@@ -151,18 +145,86 @@ def cust_close(ci, cust_close_json):
 
 def merch_dispute(ci, entrypoint, rev_secret):
     print('Broadcasting {}'.format(entrypoint))
-    import pdb; pdb.set_trace()
     cmd = 'ci.{e}(\"{r}\").inject(_async=False)'.format(e=entrypoint, r=rev_secret)
     out = eval(cmd)
     print("{} ophash: ".format(entrypoint), out['hash'])
     return out
 
-def broadcast(ci, entrypoint):
+def entrypoint_no_args(ci, entrypoint):
     print('Broadcasting {}'.format(entrypoint))
     cmd = 'ci.{}().inject(_async=False)'.format(entrypoint)
     out = eval(cmd)
     print("{} ophash: ".format(entrypoint), out['hash'])
     return out
+
+def scenario1(feetracker, cust_py, merch_py, cust_close_json):
+    print("Scenario 1: origination -> dual funding -> expiry -> merch_claim")
+    cust_funding=20000000
+    merch_funding=10000000
+    out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
+    feetracker.add_result('originate', out)
+
+    # watchtower_command = "python3 passive_zkchannel_watchtower.py --contract {cid} --network {shell} --identity merchant".format(cid=main_id, shell=args.shell)
+    # print("Run the watchtower with \n" + watchtower_command)
+    # input("Press enter to continue")
+
+    # Set contract interfaces for cust and merch
+    cust_ci = cust_py.contract(main_id)
+    merch_ci = merch_py.contract(main_id)
+
+    out = add_funding(cust_ci, cust_funding)
+    feetracker.add_result('addFunding', out)
+
+    out = entrypoint_no_args(cust_ci, 'reclaimFunding')
+    feetracker.add_result('reclaimFunding', out)
+
+    out = add_funding(cust_ci, cust_funding)
+    out = add_funding(merch_ci, merch_funding)
+
+    out = entrypoint_no_args(merch_ci, 'expiry')
+    feetracker.add_result('expiry', out)
+
+    out = entrypoint_no_args(merch_ci, 'merchClaim')
+    feetracker.add_result('merchClaim', out)
+
+
+def scenario2(feetracker, cust_py, merch_py, cust_close_json):
+    print("Scenario 2: origination -> dual funding -> expiry -> cust_close -> merch_dispute")
+    cust_funding=20000000
+    merch_funding=10000000
+    out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
+
+    # Set contract interfaces for cust and merch
+    cust_ci = cust_py.contract(main_id)
+    merch_ci = merch_py.contract(main_id)
+
+    out = add_funding(cust_ci, cust_funding)
+    out = add_funding(merch_ci, merch_funding)
+    out = entrypoint_no_args(merch_ci, 'expiry')
+    out = cust_close(cust_ci, cust_close_json)
+    feetracker.add_result('custClose', out)
+
+    rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
+    out = merch_dispute(merch_ci, 'merchDispute', rev_secret)
+    feetracker.add_result('merchDispute', out)
+
+
+def scenario3(feetracker, cust_py, merch_py, cust_close_json):
+    print("Scenario 3: origination -> single funding -> cust_close -> cust_claim")
+    cust_funding=30000000
+    merch_funding=0
+    out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
+
+    # Set contract interfaces for cust and merch
+    cust_ci = cust_py.contract(main_id)
+    merch_ci = merch_py.contract(main_id)
+
+    out = add_funding(cust_ci, cust_funding)
+
+    out = cust_close(cust_ci, cust_close_json)
+    out = entrypoint_no_args(cust_ci, 'custClaim')
+    feetracker.add_result('custClaim', out)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -221,43 +283,10 @@ if __name__ == "__main__":
         pass
     merch_pubkey = merch_py.key.public_key()
 
-    out, main_id = originate(cust_py, cust_close_json)
     feetracker = FeeTracker()
-    feetracker.add_result('originate', out)
-
-    # watchtower_command = "python3 passive_zkchannel_watchtower.py --contract {cid} --network {shell} --identity merchant".format(cid=main_id, shell=args.shell)
-    # print("Run the watchtower with \n" + watchtower_command)
-    # input("Press enter to continue")
-
-    # Set contract interfaces for cust and merch
-    cust_ci = cust_py.contract(main_id)
-    merch_ci = merch_py.contract(main_id)
-
-    out = add_cust_funding(cust_ci)
-    feetracker.add_result('addFunding', out)
-
-    # out = broadcast(cust_ci, 'reclaimFunding')
-    # feetracker.add_result('reclaimFunding', out)
-    # out = add_cust_funding(cust_ci)
-
-    out = add_merch_funding(merch_ci)
-
-    out = broadcast(merch_ci, 'expiry')
-    feetracker.add_result('expiry', out)
-
-    out = broadcast(merch_ci, 'merchClaim')
-    feetracker.add_result('merchClaim', out)
-
-    # out = cust_close(cust_ci, cust_close_json)
-    # feetracker.add_result('custClose', out)
-
-    # rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
-    # out = merch_dispute(merch_ci, 'merchDispute', rev_secret)
-    # feetracker.add_result('merchDispute', out)
-
-    # out = broadcast(cust_ci, 'custClaim')
-    # feetracker.add_result('custClaim', out)
-
+    scenario1(feetracker, cust_py, merch_py, cust_close_json)
+    scenario2(feetracker, cust_py, merch_py, cust_close_json)
+    scenario3(feetracker, cust_py, merch_py, cust_close_json)
     feetracker.print_fees()
 
     print("Tests finished!")
