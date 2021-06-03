@@ -158,7 +158,7 @@ def entrypoint_no_args(ci, entrypoint):
     return out
 
 def scenario1(feetracker, cust_py, merch_py, cust_close_json):
-    print("Scenario 1: origination -> dual funding -> expiry -> merch_claim")
+    print("Scenario 1: origination -> cust_funding -> reclaim_fundning -> cust_funding -> merch_funding -> expiry -> merch_claim")
     cust_funding=20000000
     merch_funding=10000000
     out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
@@ -189,7 +189,7 @@ def scenario1(feetracker, cust_py, merch_py, cust_close_json):
 
 
 def scenario2(feetracker, cust_py, merch_py, cust_close_json):
-    print("Scenario 2: origination -> dual funding -> expiry -> cust_close -> merch_dispute")
+    print("Scenario 2: origination -> cust_funding -> merch_funding -> expiry -> cust_close -> merch_dispute")
     cust_funding=20000000
     merch_funding=10000000
     out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
@@ -210,7 +210,7 @@ def scenario2(feetracker, cust_py, merch_py, cust_close_json):
 
 
 def scenario3(feetracker, cust_py, merch_py, cust_close_json):
-    print("Scenario 3: origination -> single funding -> cust_close -> cust_claim")
+    print("Scenario 3: origination -> cust_funding -> cust_close -> cust_claim")
     cust_funding=30000000
     merch_funding=0
     out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)

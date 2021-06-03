@@ -16,5 +16,6 @@
 
 ## PyTezos edo2net tests
 
-* origination -> addFunding (cust) -> addFunding (merch) -> merchClose -> custClose -> merchDispute (dry run)
-* origination -> addFunding (cust) -> addFunding (merch) -> merchClose -> custClose -> custClaim
+* origination -> addFunding (cust) -> reclaimFunding (cust) -> addFunding (cust) -> addFunding (merch) -> expiry -> merchClaim
+* origination -> addFunding (cust) -> addFunding (merch) -> expiry -> custClose -> merchDispute
+* origination -> addFunding (cust) -> merchClose -> custClose -> custClaim
