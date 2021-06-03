@@ -7,7 +7,7 @@
 * Scenario 3: origination -> addFunding (cust) -> addFunding (merch) -> custClose -> merchDispute
 * Scenario 4: origination -> addFunding (cust) -> addFunding (merch) -> merchClose -> custClose
 * Scenario 5: origination -> addFunding (cust) -> addFunding (merch) -> mutualClose
-* Scenario 6: origination -> addFunding (cust) -> addFunding (merch) -> addCustFunding -> reclaimCustFunding
+* Scenario 6: origination -> addFunding (cust) -> reclaimFunding (cust)
 
 ## Tezos sandbox pytests
 
