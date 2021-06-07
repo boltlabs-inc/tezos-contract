@@ -56,7 +56,6 @@ class FeeTracker:
     
     def add_result(self, op_name, result):
         """Add the fees of the fees from operation result to self.fees"""
-        # pprint(result)
         fee = int(result['contents'][0]['fee'])
         storage_bytes = int(result['contents'][0]['storage_limit'])
         storage_cost = int(storage_bytes) * 250 # 250 mutez per storage_bytes byte on edo
@@ -79,6 +78,7 @@ def originate(cust_py, cust_close_json, cust_funding, merch_funding):
     (pubkey, message, _) = get_cust_close_token(cust_close_json)
     chan_id_fr, _, _, _, close_flag = message
 
+    # Merchant's PS pubkey, used for verifying the merchant's signature in custClose.
     g2 = pubkey.get("g2") 
     merchPk0 = pubkey.get("Y0") 
     merchPk1 = pubkey.get("Y1") 
@@ -87,7 +87,7 @@ def originate(cust_py, cust_close_json, cust_funding, merch_funding):
     merchPk4 = pubkey.get("Y4") 
     merchPk5 = pubkey.get("X") 
 
-    main_storage = {'cid': chan_id_fr, 
+    initial_storage = {'cid': chan_id_fr, 
     'close_flag': close_flag,
     'context_string': "zkChannels mutual close",
     'custAddr': cust_addr, 
@@ -112,7 +112,7 @@ def originate(cust_py, cust_close_json, cust_funding, merch_funding):
 
     # Originate main zkchannel contract
     print("Originate main zkChannel contract")
-    out = cust_py.origination(script=main_code.script(initial_storage=main_storage)).autofill().sign().inject(_async=False)
+    out = cust_py.origination(script=main_code.script(initial_storage=initial_storage)).autofill().sign().inject(_async=False)
     print("Originate zkChannel ophash: ", out['hash'])
     # Get address of main zkchannel contract
     opg = pytezos.shell.blocks[-20:].find_operation(out['hash'])
@@ -158,72 +158,106 @@ def entrypoint_no_args(ci, entrypoint):
     return out
 
 def scenario1(feetracker, cust_py, merch_py, cust_close_json):
-    print("Scenario 1: origination -> cust_funding -> reclaim_fundning -> cust_funding -> merch_funding -> expiry -> merch_claim")
+    '''
+    Scenario 1: Customer creates a single funded contract then initiates a unilateral closure.
+    Entrypoints tested: 'addFunding', 'custClose', 'custClaim'.
+    '''
+    print("Scenario 1: origination -> cust_funding -> cust_close -> cust_claim")
+
+    # A single-funded channel is originated where the customer's initial balances (in mutez) is:
+    cust_funding=30000000
+    merch_funding=0
+    out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
+    feetracker.add_result('originate', out) # feetracker is used to track fees for benchmarking purposes 
+
+    # Set the contract interfaces for cust
+    cust_ci = cust_py.contract(main_id)
+
+    # add customer's balance to the contract using 'addFunding' entrypoint
+    out = add_funding(cust_ci, cust_funding)
+    feetracker.add_result('addFunding', out)
+
+    # customer initates unilateral closure using 'custClose' entrypoint. 
+    # The merchant's closing signature is included in 'cust_close_json'.
+    out = cust_close(cust_ci, cust_close_json)
+    feetracker.add_result('custClose', out)
+    out = entrypoint_no_args(cust_ci, 'custClaim')
+    feetracker.add_result('custClaim', out)
+
+
+def scenario2(feetracker, cust_py, merch_py, cust_close_json):
+    '''
+    Scenario 2: First the merchant initiates a unilateral closure, then the customer closes on an outdated state and is punished by the merchant.
+    Entrypoints tested: 'addFunding', 'expiry', 'custClose', 'merchDispute'.
+    '''
+    print("Scenario 2: origination -> cust_funding -> merch_funding -> expiry -> cust_close -> merch_dispute")
+    # A dual-funded channel is being created where the initial balances (in mutez) will be:
     cust_funding=20000000
     merch_funding=10000000
+    # The customer originates the custom zkchannel contract with initial storage arguments
     out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
-    feetracker.add_result('originate', out)
-
-    # watchtower_command = "python3 passive_zkchannel_watchtower.py --contract {cid} --network {shell} --identity merchant".format(cid=main_id, shell=args.shell)
-    # print("Run the watchtower with \n" + watchtower_command)
-    # input("Press enter to continue")
 
     # Set contract interfaces for cust and merch
     cust_ci = cust_py.contract(main_id)
     merch_ci = merch_py.contract(main_id)
 
+    # customer funds their side of the contract with the same amount as their initial balance
     out = add_funding(cust_ci, cust_funding)
-    feetracker.add_result('addFunding', out)
 
+    # At this point, the customer sends the contract (KT1) address to the merchant.
+    # After the customer's funding has reached 20 confirmations, the merchant funds their side of the channel.
+    out = add_funding(merch_ci, merch_funding)
+
+    # Merchant initiates closure by calling the 'expiry' entrypoint.
+    out = entrypoint_no_args(merch_ci, 'expiry')
+
+    # Customer initiates closure in response to 'expiry'.
+    out = cust_close(cust_ci, cust_close_json)
+
+    # Here, we simulate the customer closing on an old state. 
+    # The merchant views the contract storage and checks if 'rev_lock' has been seen before. 
+    # rev_lock has been seen, the merchant will punish the customer by calling 'merchDispute' and providing the revocation secret.
+    # If the secret is valid, the contract will give the total balance to the merchant.
+    rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
+    out = merch_dispute(merch_ci, 'merchDispute', rev_secret)
+    feetracker.add_result('merchDispute', out)
+
+def scenario3(feetracker, cust_py, merch_py, cust_close_json):
+    '''
+    Scenario 3: Tests the 'reclaimFunding' and 'merchClaim' entrypoints.
+    'reclaimFunding' is to be used in a dual funded channel where only one party has deposited their funds and wishes to abort channel establishment.
+    'expiry' is used by the merchant to force the customer to close the channel within the delay period.
+    'merchClaim' is used by the merchant to claim the total channel balance if the customer fails to respond to the 'expiry' call.
+    Entrypoints tested: 'addFunding', 'reclaimFunding', 'expiry', 'merchClaim'.
+    '''
+    print("Scenario 3: origination -> cust_funding -> reclaim_funding -> cust_funding -> merch_funding -> expiry -> merch_claim")
+
+    cust_funding=20000000
+    merch_funding=10000000
+    out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
+
+    # Set pytezos contract interfaces for the cust and merch
+    cust_ci = cust_py.contract(main_id)
+    merch_ci = merch_py.contract(main_id)
+
+    # customer funds their side of the contract with the same amount as their initial balance
+    out = add_funding(cust_ci, cust_funding)
+
+    # The customer reclaims their initial funding. 
+    # This entrypoint is used in the situation where the merchant aborts channel establishment and the customer wants to get their funds back.
     out = entrypoint_no_args(cust_ci, 'reclaimFunding')
     feetracker.add_result('reclaimFunding', out)
 
+    # customer and merchant fund their balances
     out = add_funding(cust_ci, cust_funding)
     out = add_funding(merch_ci, merch_funding)
 
     out = entrypoint_no_args(merch_ci, 'expiry')
     feetracker.add_result('expiry', out)
 
+    # If the customer has not broadcasted 'custClose' in response to 'expiry', the merchant can claim the full channel balance with 'merchClaim'.
     out = entrypoint_no_args(merch_ci, 'merchClaim')
     feetracker.add_result('merchClaim', out)
-
-
-def scenario2(feetracker, cust_py, merch_py, cust_close_json):
-    print("Scenario 2: origination -> cust_funding -> merch_funding -> expiry -> cust_close -> merch_dispute")
-    cust_funding=20000000
-    merch_funding=10000000
-    out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
-
-    # Set contract interfaces for cust and merch
-    cust_ci = cust_py.contract(main_id)
-    merch_ci = merch_py.contract(main_id)
-
-    out = add_funding(cust_ci, cust_funding)
-    out = add_funding(merch_ci, merch_funding)
-    out = entrypoint_no_args(merch_ci, 'expiry')
-    out = cust_close(cust_ci, cust_close_json)
-    feetracker.add_result('custClose', out)
-
-    rev_secret = add_hex_prefix(merch_close_json['rev_secret'])
-    out = merch_dispute(merch_ci, 'merchDispute', rev_secret)
-    feetracker.add_result('merchDispute', out)
-
-
-def scenario3(feetracker, cust_py, merch_py, cust_close_json):
-    print("Scenario 3: origination -> cust_funding -> cust_close -> cust_claim")
-    cust_funding=30000000
-    merch_funding=0
-    out, main_id = originate(cust_py, cust_close_json, cust_funding, merch_funding)
-
-    # Set contract interfaces for cust and merch
-    cust_ci = cust_py.contract(main_id)
-    merch_ci = merch_py.contract(main_id)
-
-    out = add_funding(cust_ci, cust_funding)
-
-    out = cust_close(cust_ci, cust_close_json)
-    out = entrypoint_no_args(cust_ci, 'custClaim')
-    feetracker.add_result('custClaim', out)
 
 
 if __name__ == "__main__":
