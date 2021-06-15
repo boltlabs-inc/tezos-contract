@@ -4,11 +4,8 @@
 
 The zkChannels contract is currently under development and has not passed a security audit. It is not suitable for production yet.
 
-## License
-
-All code in this workspace is licensed under
-
- * MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
+## Documentation
+Please refer to the [tezos-contract wiki](https://github.com/boltlabs-inc/tezos-contract/wiki) for documentation around the contract.
 
 ## zkChannels smart contract
 
@@ -21,3 +18,9 @@ All code in this workspace is licensed under
 ## Testnet (edo2net) testing
 
 [pytezos-tests](pytezos-tests) contains the files and instructions to run a full lifecycle of a zkChannels contract on testnet using the [pytezos](https://pytezos.baking-bad.org) library.
+
+## License
+
+All code in this workspace is licensed under
+
+ * MIT license ([LICENSE](LICENSE) or http://opensource.org/licenses/MIT)
