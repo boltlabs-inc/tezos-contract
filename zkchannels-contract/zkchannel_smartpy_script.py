@@ -352,4 +352,36 @@ def test():
     scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
     scenario += c6.reclaimFunding().run(sender = aliceCust)
 
+
+    scenario.h2("Scenario 7: Failing tests for custClose")
+    scenario.h3("escrow")
+    c7 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
+    scenario += c7
+    scenario.h3("Customer Funding their side of the channel")
+    scenario += c7.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += c7.addFunding().run(sender = bobMerch, amount = merchFunding)
+    
+    scenario.h3("Invalid revLock (31 bytes instead of 32 bytes)")
+    # invalid_revLock has 31 bytes instead of 32 bytes
+    INVALID_REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef742"
+    scenario += c7.custClose(
+        revLock = sp.bytes(INVALID_REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid balances")
+    # Invalid amounts for cust and merch for the sample signature
+    custBal = sp.tez(19)
+    merchBal = sp.tez(11)
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
     scenario.table_of_contents()
