@@ -249,6 +249,10 @@ def test():
     merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
     merchPk5 = sp.bls12_381_g2(MERCH_PK5_G2)
 
+    # Correct closing balances for the sample signature
+    custBal = sp.tez(18)
+    merchBal = sp.tez(12)
+
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
     c1 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
@@ -273,11 +277,8 @@ def test():
     scenario.p("Now the customer and merchant make a payment off chain.")
     scenario.p("For the payment to be considered complete, the customer should have received a signature from the merchant reflecting the final balances, and the merchant should have received the secret corresponding to the previous state's revLock.")
     scenario.h3("custClose")
-    custBal = sp.tez(18)
-    merchBal = sp.tez(12)
-    revLock2 = sp.bytes(REV_LOCK_FR)
     scenario += c2.custClose(
-        revLock = revLock2, 
+        revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
@@ -296,9 +297,8 @@ def test():
     scenario += c3.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c3.addFunding().run(sender = bobMerch, amount = merchFunding)
     scenario.h3("custClose")
-    revLock2 = sp.bytes(REV_LOCK_FR) # sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c3.custClose(
-        revLock = revLock2, 
+        revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
@@ -319,17 +319,11 @@ def test():
     scenario.h3("custClose")
     revLock3 = sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c4.custClose(
-        revLock = revLock2, 
+        revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1),
-        g2 = sp.bls12_381_g2(PUB_GEN_G2),
-        merchPk0 = sp.bls12_381_g2(MERCH_PK0_G2),
-        merchPk1 = sp.bls12_381_g2(MERCH_PK1_G2),
-        merchPk2 = sp.bls12_381_g2(MERCH_PK2_G2),
-        merchPk3 = sp.bls12_381_g2(MERCH_PK3_G2),
-        merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust)
  
     scenario.h2("Scenario 5: escrow -> mutualClose")
@@ -357,5 +351,5 @@ def test():
     scenario += c6.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
     scenario += c6.reclaimFunding().run(sender = aliceCust)
- 
+
     scenario.table_of_contents()
