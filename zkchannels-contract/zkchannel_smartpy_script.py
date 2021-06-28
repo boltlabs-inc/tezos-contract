@@ -136,13 +136,15 @@ class ZkChannel(sp.Contract):
         X = self.data.merchPk5
         cid = self.data.cid
         close_b = self.data.close_flag
+        # Convert balances from mutez -> fr
         cust_b = sp.local('cust_b', sp.fst(sp.ediv(custBal, sp.mutez(1)).open_some()))
-        one = sp.local('one', sp.bls12_381_fr("0x01"))
-        cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, one.value))
+        cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, sp.bls12_381_fr("0x01")))
         merch_b = sp.local('merch_b', sp.fst(sp.ediv(merchBal, sp.mutez(1)).open_some()))
-        merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, one.value))
-        revLockConcat = sp.local('revLockConcat', sp.concat([sp.bytes("0x050a00000020"), revLock]))
-        rev_lock_b = sp.local('rev_lock_b', sp.unpack(revLockConcat.value, t = sp.TBls12_381_fr).open_some())
+        merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, sp.bls12_381_fr("0x01")))
+        # Convert the rev_lock from bytes -> fr
+        rev_lock_packed = sp.local('rev_lock_packed', sp.concat([sp.bytes("0x050a00000020"), revLock]))
+        rev_lock_b = sp.local('rev_lock_b', sp.unpack(rev_lock_packed.value, t = sp.TBls12_381_fr).open_some())
+
         # Verify PS signature against the message
         pk = [Y0, Y1, Y2, Y3, Y4]
         msg = [cid, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value, close_b]
