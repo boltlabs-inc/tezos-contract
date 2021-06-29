@@ -3,10 +3,11 @@ import smartpy as sp
 import smartpy_michelson as mi
  
 # sample inputs for scenario tests
-CID_FR = "0x33f838822da941fbae05f60aa52a1b34ce8f75199a0ec82e44de8c71c0d5d33a"
-REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef742"
-SIG_S1_G1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49aaf"
-SIG_S2_G1 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d6d"
+CID_FR = "0x49e2bf68c90fdb873853320c6e5a7ec5bd00b72e17e6cd96c1de19b0e9652d4b"
+REV_LOCK_FR = "0x50dc0701ca265bc9dcec0e8227932edf2f67ab8e10a199830f10963da1f0772a"
+REV_SECRET = "0x1f0178304fea6045e851ca6d1bb613a093ea4e0e6f92010c44473a56807993ed"
+SIG_S1_G1 = "0x12793e9a17f581a7c4ab23aae1bb63d8b2a4c743e0d84eb655ce5f984e4c6b70efa82795360c3231fd99e1a750ff93161050944b741b8e417da09409dc67a12da50505a65b37885cfd6993cd11f98312ac283b0b8b25526278572e21a77c98e4"
+SIG_S2_G1 = "0x0a4d50d372cd83c7d4bb32fe2e009f2534fcedec655690df53d05dfa280d76067b4fec53804f7e784503aeefd2d84e1006db47b5292042d433cef04c2494a484702f566a456315308d82621b3bf8f95a3d0bd10c1f9b91c4bab18b341648fadb"
 PUB_GEN_G2 = "0x12ade57fe34fbe7a6fdcb1fc0d828cb3a5ef7fd346f5ea5cbea3b93e4514fae09d674b4d66d3bc673c4f831c8e24b8780fffb940d1776bfa796992c6d8f3d1a009394bbaf590fa2997ff97ba4c8dca3df4a2fc1d8059c2ccf914322823d870b00770ad29db057f19b894748ea2b1b622c00d94d5a412d61c7a0797f6d5c7b5d22e7bffd3f6f87158105020f9c625941b055c2555b5dcefc3c1b40f1098a3546e655e91c94ceb5db3f3ecd405caf39b2dda56412ebf3796e54043b0cc8d30558b"
 MERCH_PK0_G2 = "0x189d6846b9a2bfada602de7ebc71aa26e0ad4843bd84ced29d8ca7018978ab8e616a38bd5f23038b8c27e20d99390f4200742ab26fe59700aa9ecbfa035511c57af541a9166641088a47d09338811aecaaa399e0c95d6d8e422b318f68fac3b812808658af18177e7f3198e15279e66eebb2c5638d8c1f8a2683174fb21ae70504a1ebd3590d4f65e292c09c7b52abe810c139a8fa243314fa60922d528b240d03d2e7714a47ae3fb8999cbae79c9a0bfc3a1ed1d6cd0d313285ab29ce297087"
 MERCH_PK1_G2 = "0x03624627ed9666b0a5be2789b9c9b5853d8d5cbd42ceb2159a439d83051676c63ae1fe8e7d484cdae6990cfbf61cfd6b12797a845850d7ed720f918929c8808abe9be8b21083e851d5c5c76c8988fe33c7ef6f56626262e8f2981fea3eca9c79095c0ab2f8ec415567309c89b31822467eb89f0b6005ce888da1fa9a6486ae6bb22dd5c33c81de51ae9d4b00e54ab75b01d7dab85e39a65bde59380b8ed0603dd8256677bc18f595e79a632df8bec510730c966db477313a1a6d2b581ae1700e"
@@ -14,7 +15,7 @@ MERCH_PK2_G2 = "0x01fee6b4807855ec81e09dcd9bf44fb0eb0303ffd2430779eeb351d83c52a4
 MERCH_PK3_G2 = "0x0c0059043d9805bb179d241f4a9e92b71ffee88a2abf618b8a2fc4bdb7f60a892d47aca80527f217f0fc80184523b4911056fd8c116be111df38e4b606ddd0acfe8bc6ac252916d8f62cb739d6fb92f3ce67fe832a3d81c18580cf33223f36590a3ffb4500e2857e45726b0ac1e55fb162c61f71c4b6530272498a29b7b1b4762b1f05a58a079362886eb1bc4e6f22831861849ba23abc32cc1eb098cf75ee2588367f998e2c7bb9e3789980d424663978f2999578094e6e0ad5c788dbdc75a5"
 MERCH_PK4_G2 = "0x051678c8a430375dc1782e41ae333f44d005961c8bffbcc0262bf0b42691ac2538fe7268b1eb37b253ee1848969c3f60142237a81dc49be3cd02cc3c461436840f70383b8742ac2b9f41715ddb6ea557de34f8edcf54c2fcfd8e2fcab78f8060175c94f077627d826aebcd44b22ec22004ecffc1c7a2dfa7b7ff510110df78df6f8f17c38346e07022d7073febb339c6082d97caf8ed1c50cd6d28a15752f72b296bb21c614bf7c9c0ce17639bce60b274596df53e08eec16f441e75a243626e"
 MERCH_PK5_G2 = "0x186320ca37e72d3d54d8dec102289123afd9ff4c754b381f70fbedd44dad172ebe138f904b4ab75cf04073e19a43896f02c89b5bdae1b4ae12897697631c5e8cbafd2561b87b26546b899fb19f31a3421e6a4a16287ce1c66b62338e656fa2511812a67080cad41a0d63a96c88adef5bb365f893f056795468548fdaa09158a51861d82e15533804b7fde7f4940730cd12e39b220a07bef5a581f9612a3f70d57a9e63cf45b1ce58ec0f6491b8e8ef5571fe2583e8b08c67aedd632fcc4d2868"
-CLOSE_FLAG_B = "0x365d084a3d3a3d810606983a7690a8a119bacad72340122fa3449b1400f20f31"
+CLOSE_FLAG_B = "0x1a5dd750f1dac8698369bcede9f13ba6c99ecfced8d5ac366219c245d24f4b36"
  
 AWAITING_FUNDING = 0
 OPEN = 1
@@ -250,8 +251,8 @@ def test():
     merchPk5 = sp.bls12_381_g2(MERCH_PK5_G2)
 
     # Correct closing balances for the sample signature
-    custBal = sp.tez(18)
-    merchBal = sp.tez(12)
+    custBal = sp.tez(5)
+    merchBal = sp.tez(25)
 
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
@@ -304,8 +305,10 @@ def test():
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust)
+    scenario.h3("merchDispute called with incorrect secret")
+    scenario += c3.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(10), valid = False)
     scenario.h3("merchDispute called with correct secret")
-    # scenario += c3.merchDispute(secret = sp.bytes("0x12345678aacc")).run(sender = bobMerch, now = sp.timestamp(10))
+    scenario += c3.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(10))
  
     scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
@@ -381,21 +384,21 @@ def test():
         ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid cust balance")
-    # custhBal sp.tez(19) instead of sp.tez(18)
+    # custhBal sp.tez(6) instead of sp.tez(5)
     scenario += c7.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
-        custBal = sp.tez(19), 
+        custBal = sp.tez(6), 
         merchBal = merchBal, 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid merch balance")
-    # merchBal sp.tez(11) instead of sp.tez(12)
+    # merchBal sp.tez(24) instead of sp.tez(25)
     scenario += c7.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
-        merchBal = sp.tez(11), 
+        merchBal = sp.tez(24), 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust, valid = False)
@@ -472,23 +475,23 @@ def test():
     scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid signature - signing over incorrect custBal")
-    # Signing over custBal sp.tez(19) instead of sp.tez(18)
+    # Signing over custBal sp.tez(6) instead of sp.tez(5)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
                                                                   context_string = sp.string("incorrect context string"),
                                                                   cid = cid,
-                                                                  custBal = sp.tez(19),
+                                                                  custBal = sp.tez(6),
                                                                   merchBal = merchBal)))
     scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid signature - signing over incorrect custBal")
-    # Signing over merchBal sp.tez(11) instead of sp.tez(12)
+    # Signing over merchBal sp.tez(24) instead of sp.tez(25)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
                                                                   context_string = sp.string("incorrect context string"),
                                                                   cid = cid,
                                                                   custBal = custBal,
-                                                                  merchBal = sp.tez(11))))
+                                                                  merchBal = sp.tez(24))))
     scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid input - incorrect custBal")
@@ -499,15 +502,15 @@ def test():
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
-    # Passing in custBal sp.tez(19) instead of sp.tez(18)
-    scenario += c8.mutualClose(custBal = sp.tez(19), merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # Passing in custBal sp.tez(6) instead of sp.tez(5)
+    scenario += c8.mutualClose(custBal = sp.tez(6), merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid input - incorrect merchBal")
-    # Passing in merchBal sp.tez(11) instead of sp.tez(12)
-    scenario += c8.mutualClose(custBal = custBal, merchBal = sp.tez(11), merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # Passing in merchBal sp.tez(24) instead of sp.tez(25)
+    scenario += c8.mutualClose(custBal = custBal, merchBal = sp.tez(24), merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Verify signature used in above tests")
-    # Passing in merchBal sp.tez(11) instead of sp.tez(12)
+    # Passing in merchBal sp.tez(24) instead of sp.tez(25)
     scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = True)
 
 
