@@ -1,6 +1,5 @@
 # This smart contract implements the zkchannel flow
 import smartpy as sp
-import smartpy_michelson as mi
  
 # sample inputs for scenario tests
 CID_FR = "0x49e2bf68c90fdb873853320c6e5a7ec5bd00b72e17e6cd96c1de19b0e9652d4b"
@@ -235,8 +234,6 @@ def test():
     # Set zkChannel parameters
     cid = sp.bls12_381_fr(CID_FR)
     close_flag = sp.bls12_381_fr(CLOSE_FLAG_B)
-    custAddr = aliceCust.address
-    merchAddr = bobMerch.address
     # selfDelay = 60*60*24 # seconds in one day - 86,400
     selfDelay = 3 # seconds in one day - 86,400
     scenario.h2("On-chain installment")
@@ -306,9 +303,9 @@ def test():
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust)
     scenario.h3("merchDispute called with incorrect secret")
-    scenario += c3.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(10), valid = False)
+    scenario += c3.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
     scenario.h3("merchDispute called with correct secret")
-    scenario += c3.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(10))
+    scenario += c3.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
  
     scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
@@ -320,7 +317,6 @@ def test():
     scenario.h3("expiry")
     scenario += c4.expiry().run(sender = bobMerch)
     scenario.h3("custClose")
-    revLock3 = sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c4.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
