@@ -352,18 +352,26 @@ def test():
     scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
     scenario += c6.reclaimFunding().run(sender = aliceCust)
 
-
     scenario.h2("Scenario 7: Failing tests for custClose")
     scenario.h3("escrow")
     c7 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c7
-    scenario.h3("Customer Funding their side of the channel")
     scenario += c7.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario += c7.addFunding().run(sender = bobMerch, amount = merchFunding)
     
     scenario.h3("Invalid revLock (31 bytes instead of 32 bytes)")
     # invalid_revLock has 31 bytes instead of 32 bytes
-    INVALID_REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef742"
+    INVALID_REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
+    scenario += c7.custClose(
+        revLock = sp.bytes(INVALID_REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)    
+
+    scenario.h3("Invalid revLock value")
+    INVALID_REV_LOCK_FR = "0x1111111111111111111111111111111111111111111111111111111111111111"
     scenario += c7.custClose(
         revLock = sp.bytes(INVALID_REV_LOCK_FR), 
         custBal = custBal, 
@@ -372,16 +380,135 @@ def test():
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid balances")
-    # Invalid amounts for cust and merch for the sample signature
-    custBal = sp.tez(19)
-    merchBal = sp.tez(11)
+    scenario.h3("Invalid cust balance")
+    # custhBal sp.tez(19) instead of sp.tez(18)
     scenario += c7.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
-        custBal = custBal, 
+        custBal = sp.tez(19), 
         merchBal = merchBal, 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid merch balance")
+    # merchBal sp.tez(11) instead of sp.tez(12)
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = sp.tez(11), 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid closing signature length")
+    # Invalid closing signature length (95 bytes instead of 96 bytes)
+    INVALID_SIG_S1_G1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49a"
+    INVALID_SIG_S2_G1 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d"
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(INVALID_SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(INVALID_SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+        
+    scenario.h3("Invalid closing signature value")
+    INVALID_SIG_S1_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    INVALID_SIG_S2_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(INVALID_SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(INVALID_SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
+
+    scenario.h2("Scenario 8: Failing tests for mutualClose")
+    scenario.h3("escrow")
+    c8 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
+    scenario += c8
+    scenario += c8.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += c8.addFunding().run(sender = bobMerch, amount = merchFunding)
+
+    scenario.h3("Invalid signature - signing over incorrect contract_id")
+    # Signing over c7.address instead of c8.address 
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c7.address,
+                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect context string")
+    # Signing over c7.address instead of c8.address 
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("incorrect context string"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect context string")
+    # Signing over "incorrect context string" instead of "zkChannels mutual close"
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("incorrect context string"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect cid")
+    # Signing over "incorrect context string" instead of "zkChannels mutual close"
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  cid = sp.bls12_381_fr("0x1111111111111111111111111111111111111111111111111111111111111111"),
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect custBal")
+    # Signing over custBal sp.tez(19) instead of sp.tez(18)
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("incorrect context string"),
+                                                                  cid = cid,
+                                                                  custBal = sp.tez(19),
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect custBal")
+    # Signing over merchBal sp.tez(11) instead of sp.tez(12)
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("incorrect context string"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = sp.tez(11))))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid input - incorrect custBal")
+    # Create valid signature
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    # Passing in custBal sp.tez(19) instead of sp.tez(18)
+    scenario += c8.mutualClose(custBal = sp.tez(19), merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid input - incorrect merchBal")
+    # Passing in merchBal sp.tez(11) instead of sp.tez(12)
+    scenario += c8.mutualClose(custBal = custBal, merchBal = sp.tez(11), merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Verify signature used in above tests")
+    # Passing in merchBal sp.tez(11) instead of sp.tez(12)
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = True)
+
 
     scenario.table_of_contents()
