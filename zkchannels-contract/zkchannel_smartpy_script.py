@@ -441,16 +441,6 @@ def test():
     scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid signature - signing over incorrect context string")
-    # Signing over c7.address instead of c8.address 
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c8.address,
-                                                                  context_string = sp.string("incorrect context string"),
-                                                                  cid = cid,
-                                                                  custBal = custBal,
-                                                                  merchBal = merchBal)))
-    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
-
-    scenario.h3("Invalid signature - signing over incorrect context string")
     # Signing over "incorrect context string" instead of "zkChannels mutual close"
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
@@ -480,7 +470,7 @@ def test():
                                                                   merchBal = merchBal)))
     scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid signature - signing over incorrect custBal")
+    scenario.h3("Invalid signature - signing over incorrect merchBal")
     # Signing over merchBal sp.tez(24) instead of sp.tez(25)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
