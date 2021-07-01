@@ -1,20 +1,19 @@
 # This smart contract implements the zkchannel flow
 import smartpy as sp
-import smartpy_michelson as mi
  
 # sample inputs for scenario tests
-CID_FR = "0x33f838822da941fbae05f60aa52a1b34ce8f75199a0ec82e44de8c71c0d5d33a"
-REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef742"
-SIG_S1_G1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49aaf"
-SIG_S2_G1 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d6d"
-PUB_GEN_G2 = "0x12ade57fe34fbe7a6fdcb1fc0d828cb3a5ef7fd346f5ea5cbea3b93e4514fae09d674b4d66d3bc673c4f831c8e24b8780fffb940d1776bfa796992c6d8f3d1a009394bbaf590fa2997ff97ba4c8dca3df4a2fc1d8059c2ccf914322823d870b00770ad29db057f19b894748ea2b1b622c00d94d5a412d61c7a0797f6d5c7b5d22e7bffd3f6f87158105020f9c625941b055c2555b5dcefc3c1b40f1098a3546e655e91c94ceb5db3f3ecd405caf39b2dda56412ebf3796e54043b0cc8d30558b"
-MERCH_PK0_G2 = "0x189d6846b9a2bfada602de7ebc71aa26e0ad4843bd84ced29d8ca7018978ab8e616a38bd5f23038b8c27e20d99390f4200742ab26fe59700aa9ecbfa035511c57af541a9166641088a47d09338811aecaaa399e0c95d6d8e422b318f68fac3b812808658af18177e7f3198e15279e66eebb2c5638d8c1f8a2683174fb21ae70504a1ebd3590d4f65e292c09c7b52abe810c139a8fa243314fa60922d528b240d03d2e7714a47ae3fb8999cbae79c9a0bfc3a1ed1d6cd0d313285ab29ce297087"
-MERCH_PK1_G2 = "0x03624627ed9666b0a5be2789b9c9b5853d8d5cbd42ceb2159a439d83051676c63ae1fe8e7d484cdae6990cfbf61cfd6b12797a845850d7ed720f918929c8808abe9be8b21083e851d5c5c76c8988fe33c7ef6f56626262e8f2981fea3eca9c79095c0ab2f8ec415567309c89b31822467eb89f0b6005ce888da1fa9a6486ae6bb22dd5c33c81de51ae9d4b00e54ab75b01d7dab85e39a65bde59380b8ed0603dd8256677bc18f595e79a632df8bec510730c966db477313a1a6d2b581ae1700e"
-MERCH_PK2_G2 = "0x01fee6b4807855ec81e09dcd9bf44fb0eb0303ffd2430779eeb351d83c52a4e073fe50f819f57dcf13b72319b4eff7a204d16de139291709f167d5fe87fbc6b8fbeeb4583118f024b75e613ff30f59b7bd0476cdef46e2f08e07cfb217f1747f180893fa0a3db549b6ec7c2c0d1f7a905c35d70c6442bdbae302c9bc0af7e6041c4f12edae5363854880e43dacbe896506196b7b32c03d1e8440137368aef2e6028da972e57c2eebb3020feb6c0997ac5a2f5c482f67ea36222287d19eedef1d"
-MERCH_PK3_G2 = "0x0c0059043d9805bb179d241f4a9e92b71ffee88a2abf618b8a2fc4bdb7f60a892d47aca80527f217f0fc80184523b4911056fd8c116be111df38e4b606ddd0acfe8bc6ac252916d8f62cb739d6fb92f3ce67fe832a3d81c18580cf33223f36590a3ffb4500e2857e45726b0ac1e55fb162c61f71c4b6530272498a29b7b1b4762b1f05a58a079362886eb1bc4e6f22831861849ba23abc32cc1eb098cf75ee2588367f998e2c7bb9e3789980d424663978f2999578094e6e0ad5c788dbdc75a5"
-MERCH_PK4_G2 = "0x051678c8a430375dc1782e41ae333f44d005961c8bffbcc0262bf0b42691ac2538fe7268b1eb37b253ee1848969c3f60142237a81dc49be3cd02cc3c461436840f70383b8742ac2b9f41715ddb6ea557de34f8edcf54c2fcfd8e2fcab78f8060175c94f077627d826aebcd44b22ec22004ecffc1c7a2dfa7b7ff510110df78df6f8f17c38346e07022d7073febb339c6082d97caf8ed1c50cd6d28a15752f72b296bb21c614bf7c9c0ce17639bce60b274596df53e08eec16f441e75a243626e"
-MERCH_PK5_G2 = "0x186320ca37e72d3d54d8dec102289123afd9ff4c754b381f70fbedd44dad172ebe138f904b4ab75cf04073e19a43896f02c89b5bdae1b4ae12897697631c5e8cbafd2561b87b26546b899fb19f31a3421e6a4a16287ce1c66b62338e656fa2511812a67080cad41a0d63a96c88adef5bb365f893f056795468548fdaa09158a51861d82e15533804b7fde7f4940730cd12e39b220a07bef5a581f9612a3f70d57a9e63cf45b1ce58ec0f6491b8e8ef5571fe2583e8b08c67aedd632fcc4d2868"
-CLOSE_FLAG_B = "0x365d084a3d3a3d810606983a7690a8a119bacad72340122fa3449b1400f20f31"
+CID_FR = "0x5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67"
+REV_LOCK_FR = "0x7723ecf912ca83f8c637e7341699dad476ba971506cbf5f6bdaaac313b761c2f"
+SIG_S1_G1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cf"
+SIG_S2_G1 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630"
+PUB_GEN_G2 = "0x0b9ea946e3fa314fdf01e7f6077b383eb113cb0c6b9c45bdd76579ca6ffcd875828453fe119df06dd96222899e16b70e0597d482200131de43ed4185e8b816339acf1cf17432ef8c9b0ee6bee7ce7f4b90d0e223b463b7b036072ac350984a7d18a06ae675abb45a6fc99a015a6449407d514c13c237a69177a3c467198ffbad00c342fc747c5a02b7c1004aa40518910c0e5dcc467d1effb9f7a6a9b7c13034e1de1509f07be3084f6d83711c614dd8ea5cf875c37c58d8f1e69c1df3fb9fc6"
+MERCH_PK0_G2 = "0x1249832415369e4a3043e21040b95583b7a868b9e73ff520884dd622b694defdfefe31ef0c11ec0956f2ac25b75f4ae00758ec3afe7d5160b2e9310954e5565e83b632d7075429dbd08ad795da021b2d175e49a6e4a402a387933fe5fd6c74b80c097ece2ae44bfe10347cf753165cfe80aea3823f7d140671afad20b620cc089f29f9c4095a8a9cf412290dfef1f8811399067199e2b871477921c38bd7ca53bbb8a89747c51f56ad35ce9f45c1a890417b77076673a683e23a98e23464598f"
+MERCH_PK1_G2 = "0x0df5839732a5c6ecc2dac945897afbb775788042b6dade7181f29da2255a7c406f9e990ddf98f81f93c3caa5ec1fd1d40a43d9a34e76ce76b3ae48952ab83996025209ae2d5ad77dcb4b580390b4917fbefd5d9376d8de4ef872bfe5503327ac171a1cddbdfe6ab91794981172bab8c62dcac137c5a5824351d7f35d2b84f03c15ebe48d129ac0fb2dc34fbb230632fd0f8eb2bd39a6e8da0c5fb91aebb61ce522e460d7fd9995832c0f8be09ff44cb4df07d0aa9008207514442814018f61fb"
+MERCH_PK2_G2 = "0x02048d8c4b04b83603d7078cda46549325aeb60b9b387a3b0bc8d84d49b5f210ca7dae080c7b5a3e2fb71c6938d5090710822f026a1367ba49f366f8b8605f9c008ed306a0a4b06c00816fb936299249871d77e91c89825e5d70b6e37c4d2e7f04b7abcb4aa2f095e8568b4d0ea9251e93f28bb6d98c058cd47194de7fb33a1c04e2bfe158c3e4dc34f1bf5f4125066b160d63ef314554cca42c22a3f5f57a9f54d8d8557a43661d322dc416985f3558c992b08c378e04a04e4f4043ebd25f38"
+MERCH_PK3_G2 = "0x03f479529090932a017d95deee54d66048b1c99e286193734db8dc610bc85f62fcf761a61e289da376eddfc8eeb133721985f59205455baf92251ce5d922e27eff8391541d76b836e049041ea3eb394883348bad13053e8181e95be33c0c01500c6775a22a190985223d6ae7ebfdb0ac1ae87fc73d43a1a758086228d6c00f4a5679d497298544ac28ef4c012bba3b8b00f0d3e856f83a98a287e8eacfa516cc49608e99059f9960cc0ef1f9300938170df759157c8eb5f3cda6fd235d057a53"
+MERCH_PK4_G2 = "0x1071998a1831f568d448c178b1c4d5f90a2c8191a027181957e87735eb7ec6c1b1b6f6245a2cff2d20e19a8b8719d91f05c265f2919fcc701c465462c423e05573442fb2b15eddd921bb77fa1ec29fc54ae24e672eb302ee695bd4726f629a4c0d42acb2a3f744a69cdd32733d6d467357a1d481088147cd086bfc33f391bb68c6a13c831d8deca8e36da604c63c08870c14be3600b29a3844ca2758a33172329ffa38284f99e96791fac534605c109cfe51752bcb8c143d6f86c2aa91a2a9aa"
+MERCH_PK5_G2 = "0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e62750d699bd13647089278a1e6cc490986f181529059281216c836f054f392efb90b4890a57e46f43f7dc5a8faf0fe41a1b2cd54402dd0af86b78c3a8e175daf9530a2d9d970935dc3e93463565b431d38e13456092bce8da73ed1c2274a02dd29e1e3e0dda7a6f1e0f6c67ab741b4cc20212dcab1cad18c655264f6f56a9ad1a383be2cd0c72d2fdb59ffea76cb1c9d57f84a0d82ea391579bb5e11bc61e40d136"
+CLOSE_FLAG_B = "0x000000000000000000000000000000000000000000000000000000434c4f5345"
  
 AWAITING_FUNDING = 0
 OPEN = 1
@@ -24,6 +23,7 @@ CLOSED = 4
  
 ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
+
 # cid is a unique identifier for the channel.
 # Addresses are used both for interacting with contract, and receiving payouts. Addresses must be for implicit accounts (tz1) only, not smart contracts.
 # Public keys are used for verifying signatures required for certain state transitions.
@@ -128,25 +128,28 @@ class ZkChannel(sp.Contract):
         sp.verify(self.is_g1_not_zero(s1))
         # Prepare pairing check inputs
         g2 = self.data.g2
-        Y0 = self.data.merchPk0
-        Y1 = self.data.merchPk1
-        Y2 = self.data.merchPk2
-        Y3 = self.data.merchPk3
-        Y4 = self.data.merchPk4
-        X = self.data.merchPk5
+        y2s0 = self.data.merchPk0
+        y2s1 = self.data.merchPk1
+        y2s2 = self.data.merchPk2
+        y2s3 = self.data.merchPk3
+        y2s4 = self.data.merchPk4
+        x2 = self.data.merchPk5
         cid = self.data.cid
         close_b = self.data.close_flag
+        # Convert balances from mutez -> fr
         cust_b = sp.local('cust_b', sp.fst(sp.ediv(custBal, sp.mutez(1)).open_some()))
-        one = sp.local('one', sp.bls12_381_fr("0x01"))
-        cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, one.value))
+        cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, sp.bls12_381_fr("0x01")))
         merch_b = sp.local('merch_b', sp.fst(sp.ediv(merchBal, sp.mutez(1)).open_some()))
-        merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, one.value))
-        revLockConcat = sp.local('revLockConcat', sp.concat([sp.bytes("0x050a00000020"), revLock]))
-        rev_lock_b = sp.local('rev_lock_b', sp.unpack(revLockConcat.value, t = sp.TBls12_381_fr).open_some())
+        merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, sp.bls12_381_fr("0x01")))
+        # Convert the rev_lock from bytes -> fr
+        rev_lock_packed = sp.local('rev_lock_packed', sp.concat([sp.bytes("0x050a00000020"), revLock]))
+        rev_lock_b = sp.local('rev_lock_b', sp.unpack(rev_lock_packed.value, t = sp.TBls12_381_fr).open_some())
+
         # Verify PS signature against the message
-        pk = [Y0, Y1, Y2, Y3, Y4]
-        msg = [cid, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value, close_b]
-        prod1 = sp.local('prod1', X)
+        pk = [y2s0, y2s1, y2s2, y2s3, y2s4]
+        # channel ID, close flag, rev lock, Cust Bal and Merch Bal
+        msg = [cid, close_b, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value]
+        prod1 = sp.local('prod1', x2)
         for i in range(0, len(msg)):
             prod1.value += sp.mul(pk[i], msg[i])
         sp.verify(sp.pairing_check([sp.pair(s1, prod1.value), sp.pair(s2, -g2)]), message="pairing check failed")
@@ -217,6 +220,7 @@ class ZkChannel(sp.Contract):
         self.data.status = CLOSED
  
  
+ 
 @sp.add_test(name = "basic")
 def test():
  
@@ -234,13 +238,11 @@ def test():
     # Set zkChannel parameters
     cid = sp.bls12_381_fr(CID_FR)
     close_flag = sp.bls12_381_fr(CLOSE_FLAG_B)
-    custAddr = aliceCust.address
-    merchAddr = bobMerch.address
     # selfDelay = 60*60*24 # seconds in one day - 86,400
     selfDelay = 3 # seconds in one day - 86,400
     scenario.h2("On-chain installment")
-    custFunding = sp.tez(20)
-    merchFunding = sp.tez(10)
+    custFunding = sp.tez(5)
+    merchFunding = sp.tez(0)
     g2 = sp.bls12_381_g2(PUB_GEN_G2)
     merchPk0 = sp.bls12_381_g2(MERCH_PK0_G2)
     merchPk1 = sp.bls12_381_g2(MERCH_PK1_G2)
@@ -249,13 +251,16 @@ def test():
     merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
     merchPk5 = sp.bls12_381_g2(MERCH_PK5_G2)
 
+    # Correct closing balances for the sample signature
+    custBal = sp.tez(4)
+    merchBal = sp.tez(1)
+
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
     c1 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     scenario += c1
     scenario.h3("Funding the channel")
     scenario += c1.addFunding().run(sender = aliceCust, amount = custFunding)
-    scenario += c1.addFunding().run(sender = bobMerch, amount = merchFunding)
     scenario.h3("expiry")
     scenario += c1.expiry().run(sender = bobMerch)
     scenario.h3("unsuccessful merchClaim before delay period")
@@ -269,17 +274,13 @@ def test():
     scenario += c2
     scenario.h3("Funding the channel")
     scenario += c2.addFunding().run(sender = aliceCust, amount = custFunding)
-    scenario += c2.addFunding().run(sender = bobMerch, amount = merchFunding)
     scenario.p("Now the customer and merchant make a payment off chain.")
     scenario.p("For the payment to be considered complete, the customer should have received a signature from the merchant reflecting the final balances, and the merchant should have received the secret corresponding to the previous state's revLock.")
     scenario.h3("custClose")
-    custBal = sp.tez(18)
-    merchBal = sp.tez(12)
-    revLock2 = sp.bytes(REV_LOCK_FR)
     scenario += c2.custClose(
-        revLock = revLock2, 
-        custBal = custBal, 
-        merchBal = merchBal, 
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal,
+        merchBal = merchBal,
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust)
@@ -294,18 +295,18 @@ def test():
     scenario += c3
     scenario.h3("Funding the channel")
     scenario += c3.addFunding().run(sender = aliceCust, amount = custFunding)
-    scenario += c3.addFunding().run(sender = bobMerch, amount = merchFunding)
     scenario.h3("custClose")
-    revLock2 = sp.bytes(REV_LOCK_FR) # sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c3.custClose(
-        revLock = revLock2, 
+        revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust)
-    scenario.h3("merchDispute called with correct secret")
-    # scenario += c3.merchDispute(secret = sp.bytes("0x12345678aacc")).run(sender = bobMerch, now = sp.timestamp(10))
+    scenario.h3("merchDispute called with incorrect secret")
+    scenario += c3.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
+    # scenario.h3("merchDispute called with correct secret")
+    # scenario += c3.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
  
     scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
@@ -313,23 +314,15 @@ def test():
     scenario += c4
     scenario.h3("Funding the channel")
     scenario += c4.addFunding().run(sender = aliceCust, amount = custFunding)
-    scenario += c4.addFunding().run(sender = bobMerch, amount = merchFunding)
     scenario.h3("expiry")
     scenario += c4.expiry().run(sender = bobMerch)
     scenario.h3("custClose")
-    revLock3 = sp.sha3(sp.bytes("0x12345678aacc"))
     scenario += c4.custClose(
-        revLock = revLock2, 
+        revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1),
-        g2 = sp.bls12_381_g2(PUB_GEN_G2),
-        merchPk0 = sp.bls12_381_g2(MERCH_PK0_G2),
-        merchPk1 = sp.bls12_381_g2(MERCH_PK1_G2),
-        merchPk2 = sp.bls12_381_g2(MERCH_PK2_G2),
-        merchPk3 = sp.bls12_381_g2(MERCH_PK3_G2),
-        merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust)
  
     scenario.h2("Scenario 5: escrow -> mutualClose")
@@ -338,7 +331,6 @@ def test():
     scenario += c5
     scenario.h3("Funding the channel")
     scenario += c5.addFunding().run(sender = aliceCust, amount = custFunding)
-    scenario += c5.addFunding().run(sender = bobMerch, amount = merchFunding)
     # Merchant's signature on the latest state
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c5.address,
@@ -349,13 +341,159 @@ def test():
     scenario.h3("mutualClose")
     scenario += c5.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust)
  
-    scenario.h2("Scenario 6: escrow -> addCustFunding -> reclaimCustFunding")
+    # scenario.h2("Scenario 6: escrow -> addCustFunding -> reclaimCustFunding")
+    # scenario.h3("escrow")
+    # c6 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
+    # scenario += c6
+    # scenario.h3("Customer Funding their side of the channel")
+    # scenario += c6.addFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
+    # scenario += c6.reclaimFunding().run(sender = aliceCust)
+
+    scenario.h2("Scenario 7: Failing tests for custClose")
     scenario.h3("escrow")
-    c6 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c6
-    scenario.h3("Customer Funding their side of the channel")
-    scenario += c6.addFunding().run(sender = aliceCust, amount = custFunding)
-    scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
-    scenario += c6.reclaimFunding().run(sender = aliceCust)
- 
+    c7 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
+    scenario += c7
+    scenario += c7.addFunding().run(sender = aliceCust, amount = custFunding)
+    
+    scenario.h3("Invalid revLock (31 bytes instead of 32 bytes)")
+    # invalid_revLock has 31 bytes instead of 32 bytes
+    INVALID_REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
+    scenario += c7.custClose(
+        revLock = sp.bytes(INVALID_REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)    
+
+    scenario.h3("Invalid revLock value")
+    INVALID_REV_LOCK_FR = "0x1111111111111111111111111111111111111111111111111111111111111111"
+    scenario += c7.custClose(
+        revLock = sp.bytes(INVALID_REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid cust balance")
+    # custhBal sp.tez(5) instead of sp.tez(4)
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = sp.tez(5), 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid merch balance")
+    # merchBal sp.tez(0) instead of sp.tez(1)
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = sp.tez(0), 
+        s1 = sp.bls12_381_g1(SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid closing signature length")
+    # Invalid closing signature length (95 bytes instead of 96 bytes)
+    INVALID_SIG_S1_G1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49a"
+    INVALID_SIG_S2_G1 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d"
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(INVALID_SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(INVALID_SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+        
+    scenario.h3("Invalid closing signature value")
+    INVALID_SIG_S1_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    INVALID_SIG_S2_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    scenario += c7.custClose(
+        revLock = sp.bytes(REV_LOCK_FR), 
+        custBal = custBal, 
+        merchBal = merchBal, 
+        s1 = sp.bls12_381_g1(INVALID_SIG_S1_G1), 
+        s2 = sp.bls12_381_g1(INVALID_SIG_S2_G1)
+        ).run(sender = aliceCust, valid = False)
+
+
+    scenario.h2("Scenario 8: Failing tests for mutualClose")
+    scenario.h3("escrow")
+    c8 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
+    scenario += c8
+    scenario += c8.addFunding().run(sender = aliceCust, amount = custFunding)
+
+    scenario.h3("Invalid signature - signing over incorrect contract_id")
+    # Signing over c7.address instead of c8.address 
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c7.address,
+                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect context string")
+    # Signing over "incorrect context string" instead of "zkChannels mutual close"
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("incorrect context string"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect cid")
+    # Signing over incorred cid (channel id)
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  cid = sp.bls12_381_fr("0x1111111111111111111111111111111111111111111111111111111111111111"),
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect custBal")
+    # Signing over custBal sp.tez(5) instead of sp.tez(4)
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("incorrect context string"),
+                                                                  cid = cid,
+                                                                  custBal = sp.tez(5),
+                                                                  merchBal = merchBal)))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid signature - signing over incorrect merchBal")
+    # Signing over merchBal sp.tez(0) instead of sp.tez(1)
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("incorrect context string"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = sp.tez(0))))
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid input - incorrect custBal")
+    # Create valid signature
+    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+                                                                  contract_id = c8.address,
+                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  cid = cid,
+                                                                  custBal = custBal,
+                                                                  merchBal = merchBal)))
+    # Passing in custBal sp.tez(5) instead of sp.tez(4)
+    scenario += c8.mutualClose(custBal = sp.tez(5), merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid input - incorrect merchBal")
+    # Passing in merchBal sp.tez(0) instead of sp.tez(1)
+    scenario += c8.mutualClose(custBal = custBal, merchBal = sp.tez(24), merchSig = merchSig).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Verify signature used in above tests")
+    scenario += c8.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = True)
+
+
     scenario.table_of_contents()
