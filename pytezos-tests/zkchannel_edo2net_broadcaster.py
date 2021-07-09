@@ -155,7 +155,7 @@ def entrypoint_no_args(ci, entrypoint):
 
 def scenario1(feetracker, cust_py, merch_py, cust_close_json, establish_params):
     '''
-    Scenario 1: Customer creates a single funded contract then initiates a unilateral customerclosure.
+    Scenario 1: Customer creates a single funded contract then initiates a unilateral customer closure.
     Entrypoints tested: 'addFunding', 'custClose', 'custClaim'.
     '''
     print("Scenario 1: origination -> cust_funding -> cust_close -> cust_claim")
