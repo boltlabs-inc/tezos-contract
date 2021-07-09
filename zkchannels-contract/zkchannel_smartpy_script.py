@@ -25,6 +25,7 @@ CLOSED = 4
  
 ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
+CONTEXT_STRING = "zkChannels mutual close"
 
 # cid is a unique identifier for the channel.
 # Addresses are used both for interacting with contract, and receiving payouts. Addresses must be for implicit accounts (tz1) only, not smart contracts.
@@ -60,8 +61,7 @@ class ZkChannel(sp.Contract):
                   revLock           = sp.bytes("0x00"),
                   selfDelay         = selfDelay,
                   merchPsPkHash     = merchPsPkHash,
-                  delayExpiry       = sp.timestamp(0),
-                  context_string    = sp.string("zkChannels mutual close"))
+                  delayExpiry       = sp.timestamp(0))
  
     # addFunding is called by the customer or the merchant to fund their
     # portion of the channel (according to the amounts specified in custFunding
@@ -139,7 +139,7 @@ class ZkChannel(sp.Contract):
         _y2s2 = self.convert_bytes_to_G2(y2s2)
         _y2s3 = self.convert_bytes_to_G2(y2s3)
         _y2s4 = self.convert_bytes_to_G2(y2s4)
-        close_b = sp.bls12_381_fr("0x000000000000000000000000000000000000000000000000000000434c4f5345")
+        close_b = sp.bls12_381_fr(CLOSE_FLAG_B)
         # Convert balances from mutez -> fr
         cust_b = sp.local('cust_b', sp.fst(sp.ediv(custBal, sp.mutez(1)).open_some()))
         cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, sp.bls12_381_fr("0x01")))
@@ -209,7 +209,7 @@ class ZkChannel(sp.Contract):
                                      merchSig,
                                      sp.pack(sp.record(
                                              contract_id = sp.self_address,
-                                             context_string = self.data.context_string,
+                                             context_string = sp.string(CONTEXT_STRING),
                                              cid = self.data.cid,
                                              custBal = custBal,
                                              merchBal = merchBal)
@@ -360,7 +360,7 @@ def test():
     # Merchant's signature on the latest state
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c5.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  context_string = sp.string(CONTEXT_STRING),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
@@ -516,7 +516,7 @@ def test():
     # Signing over c7.address instead of c8.address 
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c7.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  context_string = sp.string(CONTEXT_STRING),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
@@ -536,7 +536,7 @@ def test():
     # Signing over incorred cid (channel id)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  context_string = sp.string(CONTEXT_STRING),
                                                                   cid = sp.bls12_381_fr("0x1111111111111111111111111111111111111111111111111111111111111111"),
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
@@ -546,7 +546,7 @@ def test():
     # Signing over custBal sp.tez(5) instead of sp.tez(4)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
-                                                                  context_string = sp.string("incorrect context string"),
+                                                                  context_string = sp.string(CONTEXT_STRING),
                                                                   cid = cid,
                                                                   custBal = sp.tez(5),
                                                                   merchBal = merchBal)))
@@ -556,7 +556,7 @@ def test():
     # Signing over merchBal sp.tez(0) instead of sp.tez(1)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
-                                                                  context_string = sp.string("incorrect context string"),
+                                                                  context_string = sp.string(CONTEXT_STRING),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = sp.tez(0))))
@@ -566,7 +566,7 @@ def test():
     # Create valid signature
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
                                                                   contract_id = c8.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
+                                                                  context_string = sp.string(CONTEXT_STRING),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
