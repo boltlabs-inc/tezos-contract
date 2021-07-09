@@ -46,12 +46,11 @@ class ZkChannel(sp.Contract):
         x = sp.local('x', sp.unpack(sp.bytes("0x050a000000c0") + val, t = sp.TBls12_381_g2).open_some())
         sp.result(x.value)
 
-    def __init__(self, cid, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, merchPsPkHash):
+    def __init__(self, cid, custAddr, merchAddr, merchPk, custFunding, merchFunding, selfDelay, merchPsPkHash):
         self.init(
                   cid               = cid,
                   custAddr          = custAddr,
                   merchAddr         = merchAddr,
-                  custPk            = custPk,
                   merchPk           = merchPk,
                   custBal           = sp.mutez(0),
                   merchBal          = sp.mutez(0),
@@ -262,7 +261,7 @@ def test():
 
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
-    c1 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
+    c1 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
     scenario += c1
     scenario.h3("Funding the channel")
     scenario += c1.addFunding().run(sender = aliceCust, amount = custFunding)
@@ -275,7 +274,7 @@ def test():
  
     scenario.h2("Scenario 2: escrow -> custClose -> custClaim")
     scenario.h3("escrow")
-    c2 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
+    c2 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
     scenario += c2
     scenario.h3("Funding the channel")
     scenario += c2.addFunding().run(sender = aliceCust, amount = custFunding)
@@ -303,7 +302,7 @@ def test():
  
     scenario.h2("Scenario 3: escrow -> custClose -> merchDispute")
     scenario.h3("escrow")
-    c3 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
+    c3 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
     scenario += c3
     scenario.h3("Funding the channel")
     scenario += c3.addFunding().run(sender = aliceCust, amount = custFunding)
@@ -329,7 +328,7 @@ def test():
  
     scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
-    c4 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
+    c4 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
     scenario += c4
     scenario.h3("Funding the channel")
     scenario += c4.addFunding().run(sender = aliceCust, amount = custFunding)
@@ -353,7 +352,7 @@ def test():
  
     scenario.h2("Scenario 5: escrow -> mutualClose")
     scenario.h3("escrow")
-    c5 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
+    c5 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
     scenario += c5
     scenario.h3("Funding the channel")
     scenario += c5.addFunding().run(sender = aliceCust, amount = custFunding)
@@ -369,7 +368,7 @@ def test():
  
     # scenario.h2("Scenario 6: escrow -> addCustFunding -> reclaimCustFunding")
     # scenario.h3("escrow")
-    # c6 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
+    # c6 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
     # scenario += c6
     # scenario.h3("Customer Funding their side of the channel")
     # scenario += c6.addFunding().run(sender = aliceCust, amount = custFunding)
@@ -378,7 +377,7 @@ def test():
 
     scenario.h2("Scenario 7: Failing tests for custClose")
     scenario.h3("escrow")
-    c7 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
+    c7 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
     scenario += c7
     scenario += c7.addFunding().run(sender = aliceCust, amount = custFunding)
     
@@ -508,7 +507,7 @@ def test():
 
     scenario.h2("Scenario 8: Failing tests for mutualClose")
     scenario.h3("escrow")
-    c8 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
+    c8 = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, selfDelay, merchPsPkHash)
     scenario += c8
     scenario += c8.addFunding().run(sender = aliceCust, amount = custFunding)
 
