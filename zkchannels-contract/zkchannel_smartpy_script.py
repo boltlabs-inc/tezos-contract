@@ -262,7 +262,7 @@ def test():
     scenario.h3("Funding the channel")
     scenario += c1.addFunding().run(sender = aliceCust, amount = custFunding)
     scenario.h3("expiry")
-    scenario += c1.expiry().run(sender = bobMerch)
+    scenario += c1.expiry().run(sender = bobMerch, now = sp.timestamp(0))
     scenario.h3("unsuccessful merchClaim before delay period")
     scenario += c1.merchClaim().run(sender = bobMerch, now = sp.timestamp(1), valid = False)
     scenario.h3("successful merchClaim after delay period")
@@ -283,7 +283,7 @@ def test():
         merchBal = merchBal,
         s1 = sp.bls12_381_g1(SIG_S1_G1), 
         s2 = sp.bls12_381_g1(SIG_S2_G1)
-        ).run(sender = aliceCust)
+        ).run(sender = aliceCust, now = sp.timestamp(0))
     scenario.h3("unsuccessful custClaim attempt before delay period")
     scenario += c2.custClaim().run(sender = aliceCust, now = sp.timestamp(1), valid = False)
     scenario.h3("successful custClaim after delay period")
