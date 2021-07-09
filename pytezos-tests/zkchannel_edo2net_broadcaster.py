@@ -235,12 +235,14 @@ def scenario3(feetracker, cust_py, merch_py, cust_close_json, establish_params):
     '''
     print("Scenario 3: origination -> cust_funding -> reclaim_funding -> cust_funding -> merch_funding -> expiry -> merch_claim")
 
-    # A single-funded channel is originated where the customer's initial balances (in mutez) is:
+    # Create a dual-funded channel. If the establish_json is for a single funded channel, use the customer_deposit for the merchant so that it's non-zeo
     cust_funding=establish_json.get("customer_deposit")
-    merch_funding=establish_json.get("merchant_deposit")
+    if establish_json.get("merchant_deposit") == 0:
+        merch_funding=1000000
+    else:
+        merch_funding=establish_json.get("merchant_deposit")
 
     out, contract_id = originate(cust_py, establish_params, cust_funding, merch_funding)
-    feetracker.add_result('originate', out) # feetracker is used to track fees for benchmarking purposes 
     
     # Set contract interfaces for cust and merch
     cust_ci = cust_py.contract(contract_id)
@@ -249,12 +251,20 @@ def scenario3(feetracker, cust_py, merch_py, cust_close_json, establish_params):
     # customer funds their side of the contract with the same amount as their initial balance
     out = add_funding(cust_ci, cust_funding)
 
+    # customer reclaims funding
+    out = entrypoint_no_args(cust_ci, 'reclaimFunding')
+    feetracker.add_result('reclaimFunding', out)
+
+    out = add_funding(cust_ci, cust_funding)
+    out = add_funding(merch_ci, merch_funding)
+
     out = entrypoint_no_args(merch_ci, 'expiry')
     feetracker.add_result('expiry', out)
 
     # If the customer has not broadcasted 'custClose' in response to 'expiry', the merchant can claim the full channel balance with 'merchClaim'.
     out = entrypoint_no_args(merch_ci, 'merchClaim')
     feetracker.add_result('merchClaim', out)
+
 
 
 if __name__ == "__main__":
