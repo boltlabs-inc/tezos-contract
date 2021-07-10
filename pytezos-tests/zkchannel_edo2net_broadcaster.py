@@ -75,27 +75,18 @@ def add_funding(ci, amt):
 
 def originate(cust_py, init_params, cust_funding, merch_funding):
     # Create initial storage for main zkchannel contract
-    merch_ps_pk = init_params.get("merchant_ps_public_key")
-    close_scalar_bytes = init_params.get("close_scalar_bytes")
     channel_id = init_params.get("channel_id")
-
-    # Merchant's PS pubkey, used for verifying the merchant's signature in custClose.
-    g2 = merch_ps_pk.get("g2")
     
     initial_storage = {'cid': channel_id, 
-    'close_flag': close_scalar_bytes,
-    'context_string': "zkChannels mutual close",
     'custAddr': cust_addr, 
     'custBal':0, 
     'custFunding': cust_funding, 
-    'custPk': cust_pubkey, 
     'delayExpiry': '1970-01-01T00:00:00Z', 
-    'g2':g2,
     'merchAddr': merch_addr, 
     'merchBal': 0, 
     'merchFunding': merch_funding, 
     'merchPk': merch_pubkey, 
-    'merchPsPkHash': "0xb1082540d2d778a2ad3150f5fd88b8c34fd22a3e2035503e21f2d2fc0e43cf0f", # TODO: replace with merchPsPkHash from establish.json 
+    'merchPsPkHash': "0x8175037f751865cbbe7c553515283a46c8355e2ba302106320faf591b51af0b0", # TODO: replace with merchPsPkHash from establish.json 
     'revLock': '0x00', 
     'selfDelay': 3, 
     'status': 0}
@@ -115,6 +106,7 @@ def cust_close(ci, init_params, cust_close_data):
     cs = cust_close_data.get("closing_signature")
     sigma1, sigma2 = cs.get("sigma1"), cs.get("sigma2")
     revocation_lock = cust_close_data.get("revocation_lock")
+    close_scalar_bytes = init_params.get("close_scalar_bytes")
 
     cust_balance = convert_mt_to_tez(cust_close_data.get("customer_balance"))
     merch_balance = convert_mt_to_tez(cust_close_data.get("merchant_balance"))
@@ -122,7 +114,7 @@ def cust_close(ci, init_params, cust_close_data):
     # Create initial storage for main zkchannel contract
     merch_ps_pk = init_params.get("merchant_ps_public_key")
     # Merchant's PS pubkey, used for verifying the merchant's signature in custClose.
-    # g2 = merch_ps_pk.get("g2")
+    g2 = merch_ps_pk.get("g2")
     y2s = merch_ps_pk.get("y2s")
     x2 = merch_ps_pk.get("x2")
 
@@ -132,6 +124,7 @@ def cust_close(ci, init_params, cust_close_data):
         "revLock": revocation_lock,
         "s1": sigma1,
         "s2": sigma2,
+        "g2": g2,
         "y2s0": y2s[0],
         "y2s1": y2s[1],
         "y2s2": y2s[2],
@@ -201,7 +194,6 @@ def scenario2(feetracker, cust_py, merch_py, cust_close_json, establish_params):
     merch_funding=establish_json.get("merchant_deposit")
 
     out, contract_id = originate(cust_py, establish_params, cust_funding, merch_funding)
-    feetracker.add_result('originate', out) # feetracker is used to track fees for benchmarking purposes 
     
     # Set contract interfaces for cust and merch
     cust_ci = cust_py.contract(contract_id)
