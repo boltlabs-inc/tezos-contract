@@ -59,7 +59,7 @@ class FeeTracker:
         fee = int(result['contents'][0]['fee'])
         storage_bytes = int(result['contents'][0]['storage_limit'])
         storage_cost = int(storage_bytes) * 250 # 250 mutez per storage_bytes byte on edo
-        gas = int(result['contents'][0]['gas_limit'])
+        gas = int(result["contents"][0]["metadata"]["operation_result"]["consumed_gas"])
         total_cost = fee + storage_cost
         fee = {"total_cost":total_cost, "fee":fee, "storage_bytes":storage_bytes, "storage_cost":storage_cost, "gas":gas}
         self.fees.append({op_name:fee})
