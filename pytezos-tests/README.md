@@ -19,7 +19,7 @@ Set up python3 virtual environment.
 We'll need to download [PyTezos](https://github.com/baking-bad/pytezos) to interact with the tezos node. 
 ```
     sudo apt-get install libsodium-dev libsecp256k1-dev libgmp-dev
-    pip3 install pytezos
+    pip3 install -r requirements.txt
 ```
 
 You should be able to run `zkchannel_edo2net_broadcaster.py` using the files in the `sample_files` folder as follows. The arguments `--cust` and `--merch` specify testnet accounts that can be used on edo2net. `--custclose` and `--merchclose` correspond to json files that the customer and merchant would receive respectively from libzkchannels when a channel closure is initiated. 
