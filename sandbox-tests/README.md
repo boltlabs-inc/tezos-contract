@@ -5,7 +5,7 @@
 
     sudo add-apt-repository ppa:avsm/ppa
     sudo apt update
-    sudo apt-get install -y rsync git m4 build-essential patch unzip wget pkg-config libgmp-dev libev-dev libhidapi-dev libffi-dev opam jq virtualenv python3-pip 
+    sudo apt-get install -y rsync git m4 build-essential patch unzip wget pkg-config libgmp-dev libev-dev libhidapi-dev libffi-dev opam=2.0.5-1ubuntu1 jq virtualenv python3-pip 
 
 (1b) Build deps on Mac OS:
 
