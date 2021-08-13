@@ -16,12 +16,14 @@ MERCH_PK5_G2 = "0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e6
 CLOSE_FLAG_B = "0x000000000000000000000000000000000000000000000000000000434c4f5345"
 
 # zkChannel contract statuses
-AWAITING_FUNDING = 0
-OPEN = 1
-EXPIRY = 2
-CUST_CLOSE = 3
-CLOSED = 4
- 
+AWAITING_CUST_FUNDING = 0
+AWAITING_MERCH_FUNDING = 1
+OPEN = 2
+EXPIRY = 3
+CUST_CLOSE = 4
+CLOSED = 5
+FUNDING_RECLAIMED = 6
+
  # Used to check s1 is not 0
 ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
@@ -46,7 +48,7 @@ class ZkChannel(sp.Contract):
                   merchBal          = sp.mutez(0),      # merchant's closing balance
                   custFunding       = custFunding,      # customer's initial balance
                   merchFunding      = merchFunding,     # merchant's initial balance
-                  status            = sp.nat(AWAITING_FUNDING), # contract status
+                  status            = sp.nat(AWAITING_CUST_FUNDING), # contract status
                   revLock           = sp.bytes("0x00"), # revLock initialized to 0x00
                   selfDelay         = selfDelay,        # delay in seconds
                   delayExpiry       = sp.timestamp(0),  # if the delay is triggered, delayExpiry records when the delay is due to expire
@@ -66,46 +68,48 @@ class ZkChannel(sp.Contract):
     # side of the channel before the merchant.
     @sp.entry_point
     def addFunding(self):
-        # Verify channel status == AWAITING_FUNDING to make sure has not already been funded.
-        sp.verify(self.data.status == AWAITING_FUNDING)
         # Only allow the customer or merchant to fund the contract.
         sp.verify((self.data.custAddr == sp.sender) | (self.data.merchAddr == sp.sender))
+        
         # If the customer called the entrypoint:
         sp.if self.data.custAddr == sp.sender:
+            # Verify channel status == AWAITING_CUST_FUNDING.
+            sp.verify(self.data.status == AWAITING_CUST_FUNDING)
             # Verify that the operation amount matches custFunding. 
             sp.verify(sp.amount == self.data.custFunding)
-            # Verify that the customer's balance has not already been funded.
-            sp.verify(self.data.custBal == sp.tez(0))
             # Set custBal to the customer's funding amount. 
             self.data.custBal = self.data.custFunding
+            # Set channel status to AWAITING_MERCH_FUNDING
+            self.data.status = AWAITING_MERCH_FUNDING
+
         # If the merchant called the entrypoint:
         sp.if self.data.merchAddr == sp.sender:
-            # Verify that the customer’s side has already been funded
-            sp.verify(self.data.custBal == self.data.custFunding)
+            # Verify channel status == AWAITING_MERCH_FUNDING.
+            sp.verify(self.data.status == AWAITING_MERCH_FUNDING)
             # Verify that the operation amount matches merchFunding. 
             sp.verify(sp.amount == self.data.merchFunding)
-            # Verify that the merchant's balance has not already been funded.
-            sp.verify(self.data.merchBal == sp.tez(0))
             # Set merchBal to the merchant's funding amount. 
             self.data.merchBal = self.data.merchFunding
+
         # If cust and merch Balances have been funded, set the contract status to OPEN.
         sp.if ((self.data.custBal == self.data.custFunding) & (self.data.merchBal == self.data.merchFunding)):
+            # Set channel status to OPEN
             self.data.status = OPEN
 
     # reclaimFunding allows the customer to withdraw their funds
     # if the merchant has not funded their side of the channel yet.
     @sp.entry_point
     def reclaimFunding(self):
-        # Verify that the channel is still AWAITING_FUNDING.
-        sp.verify(self.data.status == AWAITING_FUNDING)
+        # Verify that the channel is still AWAITING_MERCH_FUNDING.
+        sp.verify(self.data.status == AWAITING_MERCH_FUNDING)
         # Only allow the customer to call the entrypoint.
         sp.verify(self.data.custAddr == sp.sender)
         # Verify that they had funded their side of the channel.
         sp.verify(self.data.custBal == self.data.custFunding)
         # Send the customer’s balance back to custAddr.
         sp.send(self.data.custAddr, self.data.custBal)
-        # Set the channel status to CLOSED.
-        self.data.status = CLOSED
+        # Set the channel status to FUNDING_RECLAIMED.
+        self.data.status = FUNDING_RECLAIMED
  
     # expiry can be called by the merchant to initiate channel closure.
     # The customer should call custClose using the latest state. Otherwise,
