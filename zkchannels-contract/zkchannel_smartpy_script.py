@@ -14,24 +14,21 @@ MERCH_PK3_G2 = "0x03f479529090932a017d95deee54d66048b1c99e286193734db8dc610bc85f
 MERCH_PK4_G2 = "0x1071998a1831f568d448c178b1c4d5f90a2c8191a027181957e87735eb7ec6c1b1b6f6245a2cff2d20e19a8b8719d91f05c265f2919fcc701c465462c423e05573442fb2b15eddd921bb77fa1ec29fc54ae24e672eb302ee695bd4726f629a4c0d42acb2a3f744a69cdd32733d6d467357a1d481088147cd086bfc33f391bb68c6a13c831d8deca8e36da604c63c08870c14be3600b29a3844ca2758a33172329ffa38284f99e96791fac534605c109cfe51752bcb8c143d6f86c2aa91a2a9aa"
 MERCH_PK5_G2 = "0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e62750d699bd13647089278a1e6cc490986f181529059281216c836f054f392efb90b4890a57e46f43f7dc5a8faf0fe41a1b2cd54402dd0af86b78c3a8e175daf9530a2d9d970935dc3e93463565b431d38e13456092bce8da73ed1c2274a02dd29e1e3e0dda7a6f1e0f6c67ab741b4cc20212dcab1cad18c655264f6f56a9ad1a383be2cd0c72d2fdb59ffea76cb1c9d57f84a0d82ea391579bb5e11bc61e40d136"
 CLOSE_FLAG_B = "0x000000000000000000000000000000000000000000000000000000434c4f5345"
- 
+
+# zkChannel contract statuses
 AWAITING_FUNDING = 0
 OPEN = 1
 EXPIRY = 2
 CUST_CLOSE = 3
 CLOSED = 4
  
+ # Used to check s1 is not 0
 ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
 
-# cid is a unique identifier for the channel.
-# Addresses are used both for interacting with contract, and receiving payouts. Addresses must be for implicit accounts (tz1) only, not smart contracts.
-# Public keys are used for verifying signatures required for certain state transitions.
-# revLock is the revocation lock used to punish a customer who broadcasts a revoked custState.
-# selfDelay defines the delay (in seconds) during which the other party can counter specific state transitions.
-# delayExpiry is the unix timestamp corresponding to when the delay expires.
 class ZkChannel(sp.Contract):
 
+    # is_g1_not_zero checks that s1 component of the signature is not zero. Returns 'True' if not zero
     @sp.global_lambda
     def is_g1_not_zero(val):
         packed_s1 = sp.pack(val)
@@ -40,26 +37,26 @@ class ZkChannel(sp.Contract):
 
     def __init__(self, cid, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag):
         self.init(
-                  cid               = cid,
-                  custAddr          = custAddr,
-                  merchAddr         = merchAddr,
-                  custPk            = custPk,
-                  merchPk           = merchPk,
-                  custBal           = sp.mutez(0),
-                  merchBal          = sp.mutez(0),
-                  custFunding       = custFunding,
-                  merchFunding      = merchFunding,
-                  status            = sp.nat(AWAITING_FUNDING),
-                  revLock           = sp.bytes("0x00"),
-                  selfDelay         = selfDelay,
-                  delayExpiry       = sp.timestamp(0),
-                  g2                = g2,
-                  merchPk0          = merchPk0,
-                  merchPk1          = merchPk1,
-                  merchPk2          = merchPk2,
-                  merchPk3          = merchPk3,
-                  merchPk4          = merchPk4,
-                  merchPk5          = merchPk5,
+                  cid               = cid,              # the unique identifier for the channel.
+                  custAddr          = custAddr,         # customer tz1 address
+                  merchAddr         = merchAddr,        # merchant tz1 address
+                  custPk            = custPk,           # customer tezos public key
+                  merchPk           = merchPk,          # merchant tezos public key
+                  custBal           = sp.mutez(0),      # customer's closing balance
+                  merchBal          = sp.mutez(0),      # merchant's closing balance
+                  custFunding       = custFunding,      # customer's initial balance
+                  merchFunding      = merchFunding,     # merchant's initial balance
+                  status            = sp.nat(AWAITING_FUNDING), # contract status
+                  revLock           = sp.bytes("0x00"), # revLock initialized to 0x00
+                  selfDelay         = selfDelay,        # delay in seconds
+                  delayExpiry       = sp.timestamp(0),  # if the delay is triggered, delayExpiry records when the delay is due to expire
+                  g2                = g2,               # PS pubkey
+                  merchPk0          = merchPk0,         # PS pubkey
+                  merchPk1          = merchPk1,         # PS pubkey
+                  merchPk2          = merchPk2,         # PS pubkey
+                  merchPk3          = merchPk3,         # PS pubkey
+                  merchPk4          = merchPk4,         # PS pubkey
+                  merchPk5          = merchPk5,         # PS pubkey
                   close_flag        = close_flag,
                   context_string    = sp.string("zkChannels mutual close"))
  
@@ -68,17 +65,27 @@ class ZkChannel(sp.Contract):
     # and merchFunding). The full amount must be funded in one transaction.
     @sp.entry_point
     def addFunding(self):
+        # Verify channel status == AWAITING_FUNDING to make sure has not already been funded.
         sp.verify(self.data.status == AWAITING_FUNDING)
+        # Only allow the customer or merchant to fund the contract.
         sp.verify((self.data.custAddr == sp.sender) | (self.data.merchAddr == sp.sender))
+        # If the customer called the entrypoint:
         sp.if self.data.custAddr == sp.sender:
+            # Verify that the operation amount matches custFunding. 
             sp.verify(sp.amount == self.data.custFunding)
+            # Verify that the customer's balance has not already been funded.
             sp.verify(self.data.custBal == sp.tez(0))
+            # Set custBal to the customer's funding amount. 
             self.data.custBal = self.data.custFunding
+        # If the merchant called the entrypoint:
         sp.if self.data.merchAddr == sp.sender:
+            # Verify that the operation amount matches merchFunding. 
             sp.verify(sp.amount == self.data.merchFunding)
+            # Verify that the merchant's balance has not already been funded.
             sp.verify(self.data.merchBal == sp.tez(0))
+            # Set merchBal to the merchant's funding amount. 
             self.data.merchBal = self.data.merchFunding
-        # If cust and merch Balances have been funded, mark the channel as open.
+        # If cust and merch Balances have been funded, set the contract status to OPEN.
         sp.if ((self.data.custBal == self.data.custFunding) & (self.data.merchBal == self.data.merchFunding)):
             self.data.status = OPEN
 
@@ -87,11 +94,16 @@ class ZkChannel(sp.Contract):
     # if the other party has not funded their side of the channel yet.
     @sp.entry_point
     def reclaimFunding(self):
+        # Verify that the channel is still awaiting funding
         sp.verify(self.data.status == AWAITING_FUNDING)
+        # If the customer calls reclaimFunding, verify that they had funded the channel.
+        # Send the customer's balance back to custAddr and set custBal to 0
         sp.if self.data.custAddr == sp.sender:
             sp.verify(self.data.custBal == self.data.custFunding)
             sp.send(self.data.custAddr, self.data.custBal)
             self.data.custBal = sp.tez(0)
+        # If the merchant calls reclaimFunding, verify that they had funded the channel.
+        # Send the merchant's balance back to merchAddr and set merchBal to 0
         sp.if self.data.merchAddr == sp.sender:
             sp.verify(self.data.merchBal == self.data.merchFunding)
             sp.send(self.data.merchAddr, self.data.merchBal)
@@ -103,8 +115,13 @@ class ZkChannel(sp.Contract):
     # funds in the channel using merchClaim.
     @sp.entry_point
     def expiry(self):
+        # Only allow the merchant to call the entrypoint.
         sp.verify(self.data.merchAddr == sp.sender)
+        # Verify that the contract status is OPEN.
         sp.verify(self.data.status == OPEN)
+        # Record the time when the delay period will expire with self.data.delayExpiry.
+        # The time is calculated by adding the number of seconds in selfDelay to timestamp of
+        # the block it is confirmed in.
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
         self.data.status = EXPIRY
  
@@ -112,17 +129,21 @@ class ZkChannel(sp.Contract):
     # custClose before the delay period has expired.
     @sp.entry_point
     def merchClaim(self):
+        # Only allow the merchant to call the entrypoint.
         sp.verify(self.data.merchAddr == sp.sender)
+        # Verify that the contract status is EXPIRY.
         sp.verify(self.data.status == EXPIRY)
+        # Verify that the delay period has passed.
         sp.verify(self.data.delayExpiry < sp.now)
+        # Send the total balance to the merchant.
         sp.send(self.data.merchAddr, self.data.custBal + self.data.merchBal)
-        self.data.custBal = sp.tez(0)
-        self.data.merchBal = sp.tez(0)
         self.data.status = CLOSED
 
     @sp.entry_point
     def custClose(self, custBal, merchBal, revLock, s1, s2):
+        # Only allow the customer to call the entrypoint.
         sp.verify(self.data.custAddr == sp.sender)
+        # Verify that the contract status is either OPEN or EXPIRY.
         sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
         # Fail if s1 is set to 0
         sp.verify(self.is_g1_not_zero(s1))
@@ -161,7 +182,6 @@ class ZkChannel(sp.Contract):
         # Note that all addresses must be implicit accounts (tz1), not smart contracts
         sp.if merchBal != sp.tez(0):
             sp.send(self.data.merchAddr, merchBal)
-        self.data.merchBal = sp.tez(0)
         self.data.status = CUST_CLOSE
  
     # merchDispute can be called if the merchant has the secret corresponding
@@ -169,38 +189,45 @@ class ZkChannel(sp.Contract):
     # receive the customer's balance too.
     @sp.entry_point
     def merchDispute(self, secret):
+        # Only allow the merchant to call the entrypoint.
         sp.verify(self.data.merchAddr == sp.sender)
+        # Verify that the contract status is CUST_CLOSE.
         sp.verify(self.data.status == CUST_CLOSE)
         
-        # convert rev_lock in storage from LE to BE
+        # Convert rev_lock in storage from LE to BE
         revlock_be = sp.local('revlock_be', sp.list([]))
         sp.for i in sp.range(0, 32):
             revlock_be.value.push(sp.slice(self.data.revLock, i, 1).open_some())
-            
+        # Verify the revocation secret hashes to the revocation lock
         sp.verify(sp.concat(revlock_be.value) == sp.sha3(secret))
+        # Send the customer's (revoked) balance to the merchant
         sp.send(self.data.merchAddr, self.data.custBal)
-        self.data.custBal = sp.tez(0)
         self.data.status = CLOSED
  
     # custClaim can be called by the customer to claim their balance, but only
     # after the delay period from custClose has expired.
     @sp.entry_point
     def custClaim(self):
+        # Only allow the customer to call the entrypoint.
         sp.verify(self.data.custAddr == sp.sender)
+        # Verify that the contract status is CUST_CLOSE.
         sp.verify(self.data.status == CUST_CLOSE)
+        # Verify that the delay period has passed.
         sp.verify(self.data.delayExpiry < sp.now)
+        # Send the customer's balance to the customer.
         sp.send(self.data.custAddr, self.data.custBal)
-        self.data.custBal = sp.tez(0)
         self.data.status = CLOSED
  
-    # mutualClose can be called by either the customer or the merchant and
-    # allows for an instant withdrawal of the funds. mutualClose requires
-    # a signature from the merchant and the customer on the final state.
+    # mutualClose can only be called by the customer and allows for an instant withdrawal
+    # of the funds. mutualClose requires a signature from the merchant over tuple containing
+    # the contract-id, context-string, cid, custBal, and merchBal.
     @sp.entry_point
     def mutualClose(self, custBal, merchBal, merchSig):
+        # Only allow the customer to call the entrypoint.
         sp.verify(self.data.custAddr == sp.sender)
+        # Verify that the contract status is OPEN.
         sp.verify(self.data.status == OPEN)
-        # Check merchant signature
+        # Check the merchant's EdDSA signature 
         sp.verify(sp.check_signature(self.data.merchPk,
                                      merchSig,
                                      sp.pack(sp.record(
