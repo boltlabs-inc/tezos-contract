@@ -24,88 +24,91 @@ CUST_CLOSE = 4
 CLOSED = 5
 FUNDING_RECLAIMED = 6
 
- # Used to check s1 is not 0
-ZERO_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+ # This is the value of the identity element in the elliptic curve pairing group G1 from BLS12-381 
+ # (i.e., the point at infinity on BLS12-381).
+IDENTITY_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
 
 class ZkChannel(sp.Contract):
 
-    # is_g1_not_zero checks that s1 component of the signature is not zero. Returns 'True' if not zero
+    # Returns true if this element is the identity element (the point at infinity).
     @sp.global_lambda
-    def is_g1_not_zero(val):
+    def is_g1_identity(val):
         packed_s1 = sp.pack(val)
-        packed_zero = sp.to_constant(sp.pack(sp.bls12_381_g1(ZERO_IN_G1)))
-        sp.result(packed_s1 != packed_zero)
+        packed_zero = sp.to_constant(sp.pack(sp.bls12_381_g1(IDENTITY_IN_G1)))
+        sp.result(packed_s1 == packed_zero)
 
-    def __init__(self, cid, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag):
+    # __init__ initializes the contract's storage at the time of origination. All the arguments 
+    # must be provided in the origination operation. 
+    def __init__(self, cid, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag):
         self.init(
                   cid               = cid,              # the unique identifier for the channel.
-                  custAddr          = custAddr,         # customer tz1 address
-                  merchAddr         = merchAddr,        # merchant tz1 address
+                  custAddr          = custAddr,         # customer tz1 address (linked to custPk)
+                  merchAddr         = merchAddr,        # merchant tz1 address (linked to merchPk)
                   custPk            = custPk,           # customer tezos public key
                   merchPk           = merchPk,          # merchant tezos public key
-                  custBal           = sp.mutez(0),      # customer's closing balance
-                  merchBal          = sp.mutez(0),      # merchant's closing balance
-                  custFunding       = custFunding,      # customer's initial balance
-                  merchFunding      = merchFunding,     # merchant's initial balance
+                  custBal           = custFunding,      # customer's balance
+                  merchBal          = merchFunding,     # merchant's balance
                   status            = sp.nat(AWAITING_CUST_FUNDING), # contract status
                   revLock           = sp.bytes("0x00"), # revLock initialized to 0x00
-                  selfDelay         = selfDelay,        # delay in seconds
+                  selfDelay         = selfDelay,        # An enforced delay period that must have
+                  # elapsed between calling custClose and custClaim, and between calling expiry and merchClaim.
                   delayExpiry       = sp.timestamp(0),  # if the delay is triggered, delayExpiry records when the delay is due to expire
                   g2                = g2,               # PS pubkey
-                  merchPk0          = merchPk0,         # PS pubkey
-                  merchPk1          = merchPk1,         # PS pubkey
-                  merchPk2          = merchPk2,         # PS pubkey
-                  merchPk3          = merchPk3,         # PS pubkey
-                  merchPk4          = merchPk4,         # PS pubkey
-                  merchPk5          = merchPk5,         # PS pubkey
+                  y2s_0             = y2s_0,            # PS pubkey
+                  y2s_1             = y2s_1,            # PS pubkey
+                  y2s_2             = y2s_2,            # PS pubkey
+                  y2s_3             = y2s_3,            # PS pubkey
+                  y2s_4             = y2s_4,            # PS pubkey
+                  x2                = x2,               # PS pubkey
                   close_flag        = close_flag,
                   context_string    = sp.string("zkChannels mutual close"))
 
-    # addFunding is called by the customer or the merchant to fund their portion of 
-    # the channel (according to the amounts specified in custFunding and merchFunding). 
-    # The full amount must be funded in one transaction. The customer must fund their 
-    # side of the channel before the merchant.
+    # addCustFunding is called by the customer to fund their portion of the channel (according to
+    # the amount specified by custFunding). The full amount must be funded in one transaction. The
+    # customer must fund their side of the channel before the merchant.
     @sp.entry_point
-    def addFunding(self):
-        # Only allow the customer or merchant to fund the contract.
-        sp.verify((self.data.custAddr == sp.sender) | (self.data.merchAddr == sp.sender))
-        
-        # If the customer called the entrypoint:
-        sp.if self.data.custAddr == sp.sender:
-            # Verify channel status == AWAITING_CUST_FUNDING.
-            sp.verify(self.data.status == AWAITING_CUST_FUNDING)
-            # Verify that the operation amount matches custFunding. 
-            sp.verify(sp.amount == self.data.custFunding)
-            # Set custBal to the customer's funding amount. 
-            self.data.custBal = self.data.custFunding
-            # Set channel status to AWAITING_MERCH_FUNDING
+    def addCustFunding(self):
+        # Only allow the customer to call the entrypoint.
+        sp.verify(self.data.custAddr == sp.sender)        
+        # Verify channel status == AWAITING_CUST_FUNDING.
+        sp.verify(self.data.status == AWAITING_CUST_FUNDING)
+        # Verify that the operation amount matches custBal. 
+        sp.verify(sp.amount == self.data.custBal)        
+        # If it is a single funded channel, set the channel status to OPEN. Else, set the channel 
+        # status to AWAITING_MERCH_FUNDING.
+        sp.if self.data.merchBal == sp.mutez(0):
+            self.data.status = OPEN
+        sp.else:
             self.data.status = AWAITING_MERCH_FUNDING
 
-        # If the merchant called the entrypoint:
-        sp.if self.data.merchAddr == sp.sender:
-            # Verify channel status == AWAITING_MERCH_FUNDING.
-            sp.verify(self.data.status == AWAITING_MERCH_FUNDING)
-            # Verify that the operation amount matches merchFunding. 
-            sp.verify(sp.amount == self.data.merchFunding)
-            # Set merchBal to the merchant's funding amount. 
-            self.data.merchBal = self.data.merchFunding
-
-        # If cust and merch Balances have been funded, set the contract status to OPEN.
-        sp.if ((self.data.custBal == self.data.custFunding) & (self.data.merchBal == self.data.merchFunding)):
-            # Set channel status to OPEN
-            self.data.status = OPEN
+    # addMerchFunding is called by the merchant to fund their portion of the channel (according to
+    # the amount specified by merchFunding). The full amount must be funded in one transaction. The
+    # merchant must fund their side of the channel after the customer. This step step is skipped 
+    # for single funded channels.
+    @sp.entry_point
+    def addMerchFunding(self):
+        # Only allow the merchant to call the entrypoint.
+        sp.verify(self.data.merchAddr == sp.sender)        
+        # Verify channel status == AWAITING_MERCH_FUNDING.
+        sp.verify(self.data.status == AWAITING_MERCH_FUNDING)
+        # Verify that the operation amount matches merchFunding. 
+        sp.verify(sp.amount == self.data.merchBal)
+        # Set the channel status to OPEN.
+        self.data.status = OPEN
 
     # reclaimFunding allows the customer to withdraw their funds
     # if the merchant has not funded their side of the channel yet.
     @sp.entry_point
     def reclaimFunding(self):
-        # Verify that the channel is still AWAITING_MERCH_FUNDING.
-        sp.verify(self.data.status == AWAITING_MERCH_FUNDING)
         # Only allow the customer to call the entrypoint.
         sp.verify(self.data.custAddr == sp.sender)
-        # Verify that they had funded their side of the channel.
-        sp.verify(self.data.custBal == self.data.custFunding)
+        # Verify that the channel status is AWAITING_MERCH_FUNDING. For the contract to have a 
+        # status of AWAITING_MERCH_FUNDING, the following must be true:
+        #     - it is a dual funded channel,
+        #     - customer must have already funded their side of the channel, 
+        #     - the merchant has not funded their side.
+        sp.verify(self.data.status == AWAITING_MERCH_FUNDING)
         # Send the customer’s balance back to custAddr.
         sp.send(self.data.custAddr, self.data.custBal)
         # Set the channel status to FUNDING_RECLAIMED.
@@ -127,8 +130,8 @@ class ZkChannel(sp.Contract):
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
         self.data.status = EXPIRY
  
-    # merchClaim can be called by the merchant if the customer has not called
-    # custClose before the delay period has expired.
+    # merchClaim can only be called by the merchant after the expiry entrypoint has been called and # the delay period defined by selfDelay has elapsed. If the customer calls custClose, merchClaim
+    # cannot be called.
     @sp.entry_point
     def merchClaim(self):
         # Only allow the merchant to call the entrypoint.
@@ -136,59 +139,74 @@ class ZkChannel(sp.Contract):
         # Verify that the contract status is EXPIRY.
         sp.verify(self.data.status == EXPIRY)
         # Verify that the delay period has passed.
-        sp.verify(self.data.delayExpiry < sp.now)
+        sp.verify(sp.now > self.data.delayExpiry)
         # Send the total balance to the merchant.
         sp.send(self.data.merchAddr, self.data.custBal + self.data.merchBal)
         self.data.status = CLOSED
 
+    # custClose can be called by the customer to initiate a unilateral channel closure. It can only 
+    # be called by the customer while the channel status is OPEN or EXPIRY. The entrypoint 
+    # validates the merchant's blind signature over a tuple containing the channel ID, close flag, 
+    # rev lock, customer closing balance and merchant closing balance.
     @sp.entry_point
     def custClose(self, custBal, merchBal, revLock, s1, s2):
         # Only allow the customer to call the entrypoint.
         sp.verify(self.data.custAddr == sp.sender)
         # Verify that the contract status is either OPEN or EXPIRY.
         sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
-        # Fail if s1 is set to 0
-        sp.verify(self.is_g1_not_zero(s1))
+
+        ## Start of PS signature verification 
+        # Fail if s1 is set to the identity element.
+        sp.verify(self.is_g1_identity(s1)==False)
         # Prepare pairing check inputs
         g2 = self.data.g2
-        y2s0 = self.data.merchPk0
-        y2s1 = self.data.merchPk1
-        y2s2 = self.data.merchPk2
-        y2s3 = self.data.merchPk3
-        y2s4 = self.data.merchPk4
-        x2 = self.data.merchPk5
+        y2s0 = self.data.y2s_0
+        y2s1 = self.data.y2s_1
+        y2s2 = self.data.y2s_2
+        y2s3 = self.data.y2s_3
+        y2s4 = self.data.y2s_4
+        x2 = self.data.x2
         cid = self.data.cid
         close_b = self.data.close_flag
+
         # Convert balances from mutez -> fr
         cust_b = sp.local('cust_b', sp.fst(sp.ediv(custBal, sp.mutez(1)).open_some()))
         cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, sp.bls12_381_fr("0x01")))
         merch_b = sp.local('merch_b', sp.fst(sp.ediv(merchBal, sp.mutez(1)).open_some()))
         merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, sp.bls12_381_fr("0x01")))
+
         # Convert the rev_lock from bytes -> fr
         rev_lock_packed = sp.local('rev_lock_packed', sp.concat([sp.bytes("0x050a00000020"), revLock]))
         rev_lock_b = sp.local('rev_lock_b', sp.unpack(rev_lock_packed.value, t = sp.TBls12_381_fr).open_some())
 
         # Verify PS signature against the message
         pk = [y2s0, y2s1, y2s2, y2s3, y2s4]
-        # channel ID, close flag, rev lock, Cust Bal and Merch Bal
+        # the message is composed of the channel ID, close flag, rev lock, cust closing balance and 
+        # merchant closing balance.
         msg = [cid, close_b, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value]
         prod1 = sp.local('prod1', x2)
         for i in range(0, len(msg)):
             prod1.value += sp.mul(pk[i], msg[i])
+        # Compute the pairing check.
         sp.verify(sp.pairing_check([sp.pair(s1, prod1.value), sp.pair(s2, -g2)]), message="pairing check failed")
-        # Update on-chain state and transfer merchant's balance   
+        ## End of PS signature verification
+
+        # Update the closing balances in the contract storage.  
         self.data.custBal = custBal
         self.data.revLock = revLock
+        # Set delayExpiry to the current time plus the specified delay period, selfDelay. When 
+        # delayExpiry has passed, the customer will be able to claim their balance by calling 
+        # custClaim. 
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
-        # Pay merchant immediately (unless amount is 0)
-        # Note that all addresses must be implicit accounts (tz1), not smart contracts
+        # Pay merchant immediately (unless amount is 0).
         sp.if merchBal != sp.tez(0):
             sp.send(self.data.merchAddr, merchBal)
+        # Set the channel status to CUST_CLOSE.
         self.data.status = CUST_CLOSE
  
-    # merchDispute can be called if the merchant has the secret corresponding
-    # to the latest custClose state. If the secret is valid, the merchant will
-    # receive the customer's balance too.
+    # merchDispute can be called by the merchant if they have the revocation secret corresponding 
+    # to the revocation lock in the customer's custClose entrypoint call. If the secret is valid, 
+    # the merchant will receive the customer's balance.
     @sp.entry_point
     def merchDispute(self, secret):
         # Only allow the merchant to call the entrypoint.
@@ -215,14 +233,14 @@ class ZkChannel(sp.Contract):
         # Verify that the contract status is CUST_CLOSE.
         sp.verify(self.data.status == CUST_CLOSE)
         # Verify that the delay period has passed.
-        sp.verify(self.data.delayExpiry < sp.now)
+        sp.verify(sp.now > self.data.delayExpiry)
         # Send the customer's balance to the customer.
         sp.send(self.data.custAddr, self.data.custBal)
         self.data.status = CLOSED
  
     # mutualClose can only be called by the customer and allows for an instant withdrawal
-    # of the funds. mutualClose requires a signature from the merchant over tuple containing
-    # the contract-id, context-string, cid, custBal, and merchBal.
+    # of the funds. mutualClose requires an EdDSA signature from the merchant over a 
+    # tuple containing the contract-id, context-string, cid, custBal, and merchBal.
     @sp.entry_point
     def mutualClose(self, custBal, merchBal, merchSig):
         # Only allow the customer to call the entrypoint.
@@ -273,12 +291,12 @@ def test():
     custFunding = sp.tez(5)
     merchFunding = sp.tez(0)
     g2 = sp.bls12_381_g2(PUB_GEN_G2)
-    merchPk0 = sp.bls12_381_g2(MERCH_PK0_G2)
-    merchPk1 = sp.bls12_381_g2(MERCH_PK1_G2)
-    merchPk2 = sp.bls12_381_g2(MERCH_PK2_G2)
-    merchPk3 = sp.bls12_381_g2(MERCH_PK3_G2)
-    merchPk4 = sp.bls12_381_g2(MERCH_PK4_G2)
-    merchPk5 = sp.bls12_381_g2(MERCH_PK5_G2)
+    y2s_0 = sp.bls12_381_g2(MERCH_PK0_G2)
+    y2s_1 = sp.bls12_381_g2(MERCH_PK1_G2)
+    y2s_2 = sp.bls12_381_g2(MERCH_PK2_G2)
+    y2s_3 = sp.bls12_381_g2(MERCH_PK3_G2)
+    y2s_4 = sp.bls12_381_g2(MERCH_PK4_G2)
+    x2 = sp.bls12_381_g2(MERCH_PK5_G2)
 
     # Correct closing balances for the sample signature
     custBal = sp.tez(4)
@@ -286,27 +304,27 @@ def test():
 
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
-    c1 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c1
+    mClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += mClaim
     scenario.h3("Funding the channel")
-    scenario += c1.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += mClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
     scenario.h3("expiry")
-    scenario += c1.expiry().run(sender = bobMerch, now = sp.timestamp(0))
+    scenario += mClaim.expiry().run(sender = bobMerch, now = sp.timestamp(0))
     scenario.h3("unsuccessful merchClaim before delay period")
-    scenario += c1.merchClaim().run(sender = bobMerch, now = sp.timestamp(1), valid = False)
+    scenario += mClaim.merchClaim().run(sender = bobMerch, now = sp.timestamp(1), valid = False)
     scenario.h3("successful merchClaim after delay period")
-    scenario += c1.merchClaim().run(sender = bobMerch, now = sp.timestamp(100000))
+    scenario += mClaim.merchClaim().run(sender = bobMerch, now = sp.timestamp(100000))
  
     scenario.h2("Scenario 2: escrow -> custClose -> custClaim")
     scenario.h3("escrow")
-    c2 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c2
+    cClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += cClaim
     scenario.h3("Funding the channel")
-    scenario += c2.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += cClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
     scenario.p("Now the customer and merchant make a payment off chain.")
     scenario.p("For the payment to be considered complete, the customer should have received a signature from the merchant reflecting the final balances, and the merchant should have received the secret corresponding to the previous state's revLock.")
     scenario.h3("custClose")
-    scenario += c2.custClose(
+    scenario += cClaim.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal,
         merchBal = merchBal,
@@ -314,18 +332,18 @@ def test():
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust, now = sp.timestamp(0))
     scenario.h3("unsuccessful custClaim attempt before delay period")
-    scenario += c2.custClaim().run(sender = aliceCust, now = sp.timestamp(1), valid = False)
+    scenario += cClaim.custClaim().run(sender = aliceCust, now = sp.timestamp(1), valid = False)
     scenario.h3("successful custClaim after delay period")
-    scenario += c2.custClaim().run(sender = aliceCust, now = sp.timestamp(100000))
+    scenario += cClaim.custClaim().run(sender = aliceCust, now = sp.timestamp(100000))
  
     scenario.h2("Scenario 3: escrow -> custClose -> merchDispute")
     scenario.h3("escrow")
-    c3 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c3
+    mDisp = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += mDisp
     scenario.h3("Funding the channel")
-    scenario += c3.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += mDisp.addCustFunding().run(sender = aliceCust, amount = custFunding)
     scenario.h3("custClose")
-    scenario += c3.custClose(
+    scenario += mDisp.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
@@ -333,20 +351,20 @@ def test():
         s2 = sp.bls12_381_g1(SIG_S2_G1)
         ).run(sender = aliceCust)
     scenario.h3("merchDispute called with incorrect secret")
-    scenario += c3.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
+    scenario += mDisp.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
     # scenario.h3("merchDispute called with correct secret")
-    # scenario += c3.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
+    # scenario += mDisp.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
  
     scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
-    c4 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c4
+    cClose = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += cClose
     scenario.h3("Funding the channel")
-    scenario += c4.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += cClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
     scenario.h3("expiry")
-    scenario += c4.expiry().run(sender = bobMerch)
+    scenario += cClose.expiry().run(sender = bobMerch)
     scenario.h3("custClose")
-    scenario += c4.custClose(
+    scenario += cClose.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
@@ -356,30 +374,30 @@ def test():
  
     scenario.h2("Scenario 5: escrow -> mutualClose")
     scenario.h3("escrow")
-    c5 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c5
+    mutClose = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += mutClose
     scenario.h3("Funding the channel")
-    scenario += c5.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += mutClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
     # Merchant's signature on the latest state
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c5.address,
+                                                                  contract_id = mutClose.address,
                                                                   context_string = sp.string("zkChannels mutual close"),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
     scenario.h3("mutualClose")
-    scenario += c5.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust)
+    scenario += mutClose.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust)
  
     scenario.h2("Scenario 6: Failing tests for custClose")
     scenario.h3("escrow")
-    c6 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c6
-    scenario += c6.addFunding().run(sender = aliceCust, amount = custFunding)
+    failCust = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += failCust
+    scenario += failCust.addCustFunding().run(sender = aliceCust, amount = custFunding)
     
     scenario.h3("Invalid revLock (31 bytes instead of 32 bytes)")
     # invalid_revLock has 31 bytes instead of 32 bytes
     INVALID_REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
-    scenario += c6.custClose(
+    scenario += failCust.custClose(
         revLock = sp.bytes(INVALID_REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
@@ -389,7 +407,7 @@ def test():
 
     scenario.h3("Invalid revLock value")
     INVALID_REV_LOCK_FR = "0x1111111111111111111111111111111111111111111111111111111111111111"
-    scenario += c6.custClose(
+    scenario += failCust.custClose(
         revLock = sp.bytes(INVALID_REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
@@ -399,7 +417,7 @@ def test():
 
     scenario.h3("Invalid cust balance")
     # custhBal sp.tez(5) instead of sp.tez(4)
-    scenario += c6.custClose(
+    scenario += failCust.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = sp.tez(5), 
         merchBal = merchBal, 
@@ -409,7 +427,7 @@ def test():
 
     scenario.h3("Invalid merch balance")
     # merchBal sp.tez(0) instead of sp.tez(1)
-    scenario += c6.custClose(
+    scenario += failCust.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = sp.tez(0), 
@@ -421,7 +439,7 @@ def test():
     # Invalid closing signature length (95 bytes instead of 96 bytes)
     INVALID_SIG_S1_G1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49a"
     INVALID_SIG_S2_G1 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d"
-    scenario += c6.custClose(
+    scenario += failCust.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
@@ -432,7 +450,7 @@ def test():
     scenario.h3("Invalid closing signature value")
     INVALID_SIG_S1_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
     INVALID_SIG_S2_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    scenario += c6.custClose(
+    scenario += failCust.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
@@ -443,97 +461,97 @@ def test():
 
     scenario.h2("Scenario 8: Failing tests for mutualClose")
     scenario.h3("escrow")
-    c7 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c7
-    scenario += c7.addFunding().run(sender = aliceCust, amount = custFunding)
+    failMut = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += failMut
+    scenario += failMut.addCustFunding().run(sender = aliceCust, amount = custFunding)
 
     scenario.h3("Invalid signature - signing over incorrect contract_id")
-    # Signing over c6.address instead of c7.address 
+    # Signing over failCust.address instead of failMut.address 
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c6.address,
+                                                                  contract_id = failCust.address,
                                                                   context_string = sp.string("zkChannels mutual close"),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
-    scenario += c7.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    scenario += failMut.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid signature - signing over incorrect context string")
     # Signing over "incorrect context string" instead of "zkChannels mutual close"
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c7.address,
+                                                                  contract_id = failMut.address,
                                                                   context_string = sp.string("incorrect context string"),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
-    scenario += c7.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    scenario += failMut.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid signature - signing over incorrect cid")
     # Signing over incorred cid (channel id)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c7.address,
+                                                                  contract_id = failMut.address,
                                                                   context_string = sp.string("zkChannels mutual close"),
                                                                   cid = sp.bls12_381_fr("0x1111111111111111111111111111111111111111111111111111111111111111"),
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
-    scenario += c7.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    scenario += failMut.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid signature - signing over incorrect custBal")
     # Signing over custBal sp.tez(5) instead of sp.tez(4)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c7.address,
+                                                                  contract_id = failMut.address,
                                                                   context_string = sp.string("incorrect context string"),
                                                                   cid = cid,
                                                                   custBal = sp.tez(5),
                                                                   merchBal = merchBal)))
-    scenario += c7.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    scenario += failMut.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid signature - signing over incorrect merchBal")
     # Signing over merchBal sp.tez(0) instead of sp.tez(1)
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c7.address,
+                                                                  contract_id = failMut.address,
                                                                   context_string = sp.string("incorrect context string"),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = sp.tez(0))))
-    scenario += c7.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    scenario += failMut.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid input - incorrect custBal")
     # Create valid signature
     merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = c7.address,
+                                                                  contract_id = failMut.address,
                                                                   context_string = sp.string("zkChannels mutual close"),
                                                                   cid = cid,
                                                                   custBal = custBal,
                                                                   merchBal = merchBal)))
     # Passing in custBal sp.tez(5) instead of sp.tez(4)
-    scenario += c7.mutualClose(custBal = sp.tez(5), merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    scenario += failMut.mutualClose(custBal = sp.tez(5), merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid input - incorrect merchBal")
     # Passing in merchBal sp.tez(0) instead of sp.tez(1)
-    scenario += c7.mutualClose(custBal = custBal, merchBal = sp.tez(24), merchSig = merchSig).run(sender = aliceCust, valid = False)
+    scenario += failMut.mutualClose(custBal = custBal, merchBal = sp.tez(0), merchSig = merchSig).run(sender = aliceCust, valid = False)
 
     scenario.h3("Verify signature used in above tests")
-    scenario += c7.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = True)
+    scenario += failMut.mutualClose(custBal = custBal, merchBal = merchBal, merchSig = merchSig).run(sender = aliceCust, valid = True)
 
     scenario.h1("Dual funding tests")
     custFunding = sp.tez(3)
     merchFunding = sp.tez(2)
-    scenario.h2("Scenario 8: escrow -> addFunding(cust) -> reclaimFunding -/-> addFunding(cust)")
+    scenario.h2("Scenario 8: escrow -> addCustFunding -> reclaimFunding -/-> addCustFunding")
     scenario.h3("escrow")
-    c8 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c8
+    reclaim = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += reclaim
     scenario.h3("Customer Funding their side of the channel")
-    scenario += c8.addFunding().run(sender = aliceCust, amount = custFunding)
+    scenario += reclaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
     scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
-    scenario += c8.reclaimFunding().run(sender = aliceCust)
-    scenario.h3("addFunding fails when being called for a second time")
-    scenario += c8.addFunding().run(sender = aliceCust, amount = custFunding, valid=False)
+    scenario += reclaim.reclaimFunding().run(sender = aliceCust)
+    scenario.h3("addCustFunding fails when being called for a second time")
+    scenario += reclaim.addCustFunding().run(sender = aliceCust, amount = custFunding, valid=False)
 
-    scenario.h2("Scenario 9: escrow -/-> addFunding(merch)")
+    scenario.h2("Scenario 9: escrow -/-> addMerchFunding")
     scenario.h3("escrow")
-    c9 = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, merchPk0, merchPk1, merchPk2, merchPk3, merchPk4, merchPk5, close_flag)
-    scenario += c9
+    addMerch = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag)
+    scenario += addMerch
     scenario.h3("Merchant fails to fund their side of the channel before the customer")
-    scenario += c9.addFunding().run(sender = bobMerch, amount = merchFunding, valid=False)
+    scenario += addMerch.addMerchFunding().run(sender = bobMerch, amount = merchFunding, valid=False)
 
     scenario.table_of_contents()
