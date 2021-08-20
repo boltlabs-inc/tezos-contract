@@ -4,24 +4,43 @@ import smartpy as sp
 # sample inputs for scenario tests
 CID_FR = "0x5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67"
 REV_LOCK_FR = "0x7723ecf912ca83f8c637e7341699dad476ba971506cbf5f6bdaaac313b761c2f"
-SIG_S1_G1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cf"
-SIG_S2_G1 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630"
+SIGMA_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cf"
+SIGMA_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630"
 PUB_GEN_G2 = "0x0b9ea946e3fa314fdf01e7f6077b383eb113cb0c6b9c45bdd76579ca6ffcd875828453fe119df06dd96222899e16b70e0597d482200131de43ed4185e8b816339acf1cf17432ef8c9b0ee6bee7ce7f4b90d0e223b463b7b036072ac350984a7d18a06ae675abb45a6fc99a015a6449407d514c13c237a69177a3c467198ffbad00c342fc747c5a02b7c1004aa40518910c0e5dcc467d1effb9f7a6a9b7c13034e1de1509f07be3084f6d83711c614dd8ea5cf875c37c58d8f1e69c1df3fb9fc6"
-MERCH_PK0_G2 = "0x1249832415369e4a3043e21040b95583b7a868b9e73ff520884dd622b694defdfefe31ef0c11ec0956f2ac25b75f4ae00758ec3afe7d5160b2e9310954e5565e83b632d7075429dbd08ad795da021b2d175e49a6e4a402a387933fe5fd6c74b80c097ece2ae44bfe10347cf753165cfe80aea3823f7d140671afad20b620cc089f29f9c4095a8a9cf412290dfef1f8811399067199e2b871477921c38bd7ca53bbb8a89747c51f56ad35ce9f45c1a890417b77076673a683e23a98e23464598f"
-MERCH_PK1_G2 = "0x0df5839732a5c6ecc2dac945897afbb775788042b6dade7181f29da2255a7c406f9e990ddf98f81f93c3caa5ec1fd1d40a43d9a34e76ce76b3ae48952ab83996025209ae2d5ad77dcb4b580390b4917fbefd5d9376d8de4ef872bfe5503327ac171a1cddbdfe6ab91794981172bab8c62dcac137c5a5824351d7f35d2b84f03c15ebe48d129ac0fb2dc34fbb230632fd0f8eb2bd39a6e8da0c5fb91aebb61ce522e460d7fd9995832c0f8be09ff44cb4df07d0aa9008207514442814018f61fb"
-MERCH_PK2_G2 = "0x02048d8c4b04b83603d7078cda46549325aeb60b9b387a3b0bc8d84d49b5f210ca7dae080c7b5a3e2fb71c6938d5090710822f026a1367ba49f366f8b8605f9c008ed306a0a4b06c00816fb936299249871d77e91c89825e5d70b6e37c4d2e7f04b7abcb4aa2f095e8568b4d0ea9251e93f28bb6d98c058cd47194de7fb33a1c04e2bfe158c3e4dc34f1bf5f4125066b160d63ef314554cca42c22a3f5f57a9f54d8d8557a43661d322dc416985f3558c992b08c378e04a04e4f4043ebd25f38"
-MERCH_PK3_G2 = "0x03f479529090932a017d95deee54d66048b1c99e286193734db8dc610bc85f62fcf761a61e289da376eddfc8eeb133721985f59205455baf92251ce5d922e27eff8391541d76b836e049041ea3eb394883348bad13053e8181e95be33c0c01500c6775a22a190985223d6ae7ebfdb0ac1ae87fc73d43a1a758086228d6c00f4a5679d497298544ac28ef4c012bba3b8b00f0d3e856f83a98a287e8eacfa516cc49608e99059f9960cc0ef1f9300938170df759157c8eb5f3cda6fd235d057a53"
-MERCH_PK4_G2 = "0x1071998a1831f568d448c178b1c4d5f90a2c8191a027181957e87735eb7ec6c1b1b6f6245a2cff2d20e19a8b8719d91f05c265f2919fcc701c465462c423e05573442fb2b15eddd921bb77fa1ec29fc54ae24e672eb302ee695bd4726f629a4c0d42acb2a3f744a69cdd32733d6d467357a1d481088147cd086bfc33f391bb68c6a13c831d8deca8e36da604c63c08870c14be3600b29a3844ca2758a33172329ffa38284f99e96791fac534605c109cfe51752bcb8c143d6f86c2aa91a2a9aa"
-MERCH_PK5_G2 = "0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e62750d699bd13647089278a1e6cc490986f181529059281216c836f054f392efb90b4890a57e46f43f7dc5a8faf0fe41a1b2cd54402dd0af86b78c3a8e175daf9530a2d9d970935dc3e93463565b431d38e13456092bce8da73ed1c2274a02dd29e1e3e0dda7a6f1e0f6c67ab741b4cc20212dcab1cad18c655264f6f56a9ad1a383be2cd0c72d2fdb59ffea76cb1c9d57f84a0d82ea391579bb5e11bc61e40d136"
+Y2S_0_G2 = "0x1249832415369e4a3043e21040b95583b7a868b9e73ff520884dd622b694defdfefe31ef0c11ec0956f2ac25b75f4ae00758ec3afe7d5160b2e9310954e5565e83b632d7075429dbd08ad795da021b2d175e49a6e4a402a387933fe5fd6c74b80c097ece2ae44bfe10347cf753165cfe80aea3823f7d140671afad20b620cc089f29f9c4095a8a9cf412290dfef1f8811399067199e2b871477921c38bd7ca53bbb8a89747c51f56ad35ce9f45c1a890417b77076673a683e23a98e23464598f"
+Y2S_1_G2 = "0x0df5839732a5c6ecc2dac945897afbb775788042b6dade7181f29da2255a7c406f9e990ddf98f81f93c3caa5ec1fd1d40a43d9a34e76ce76b3ae48952ab83996025209ae2d5ad77dcb4b580390b4917fbefd5d9376d8de4ef872bfe5503327ac171a1cddbdfe6ab91794981172bab8c62dcac137c5a5824351d7f35d2b84f03c15ebe48d129ac0fb2dc34fbb230632fd0f8eb2bd39a6e8da0c5fb91aebb61ce522e460d7fd9995832c0f8be09ff44cb4df07d0aa9008207514442814018f61fb"
+Y2S_2_G2 = "0x02048d8c4b04b83603d7078cda46549325aeb60b9b387a3b0bc8d84d49b5f210ca7dae080c7b5a3e2fb71c6938d5090710822f026a1367ba49f366f8b8605f9c008ed306a0a4b06c00816fb936299249871d77e91c89825e5d70b6e37c4d2e7f04b7abcb4aa2f095e8568b4d0ea9251e93f28bb6d98c058cd47194de7fb33a1c04e2bfe158c3e4dc34f1bf5f4125066b160d63ef314554cca42c22a3f5f57a9f54d8d8557a43661d322dc416985f3558c992b08c378e04a04e4f4043ebd25f38"
+Y2S_3_G2 = "0x03f479529090932a017d95deee54d66048b1c99e286193734db8dc610bc85f62fcf761a61e289da376eddfc8eeb133721985f59205455baf92251ce5d922e27eff8391541d76b836e049041ea3eb394883348bad13053e8181e95be33c0c01500c6775a22a190985223d6ae7ebfdb0ac1ae87fc73d43a1a758086228d6c00f4a5679d497298544ac28ef4c012bba3b8b00f0d3e856f83a98a287e8eacfa516cc49608e99059f9960cc0ef1f9300938170df759157c8eb5f3cda6fd235d057a53"
+Y2S_4_G2 = "0x1071998a1831f568d448c178b1c4d5f90a2c8191a027181957e87735eb7ec6c1b1b6f6245a2cff2d20e19a8b8719d91f05c265f2919fcc701c465462c423e05573442fb2b15eddd921bb77fa1ec29fc54ae24e672eb302ee695bd4726f629a4c0d42acb2a3f744a69cdd32733d6d467357a1d481088147cd086bfc33f391bb68c6a13c831d8deca8e36da604c63c08870c14be3600b29a3844ca2758a33172329ffa38284f99e96791fac534605c109cfe51752bcb8c143d6f86c2aa91a2a9aa"
+X2_G2 = "0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e62750d699bd13647089278a1e6cc490986f181529059281216c836f054f392efb90b4890a57e46f43f7dc5a8faf0fe41a1b2cd54402dd0af86b78c3a8e175daf9530a2d9d970935dc3e93463565b431d38e13456092bce8da73ed1c2274a02dd29e1e3e0dda7a6f1e0f6c67ab741b4cc20212dcab1cad18c655264f6f56a9ad1a383be2cd0c72d2fdb59ffea76cb1c9d57f84a0d82ea391579bb5e11bc61e40d136"
 CLOSE_FLAG_B = "0x000000000000000000000000000000000000000000000000000000434c4f5345"
 
 # zkChannel contract statuses
+# AWAITING_CUST_FUNDING - The contract has been originated but not funded by either party. In this 
+# state, the customer must fund their portion of the channel using the addCustFunding entrypoint.
 AWAITING_CUST_FUNDING = 0
+# AWAITING_MERCH_FUNDING - The customer has funded their side of the contract and now the merchant 
+# needs to fund their side using the addMerchFunding entrypoint. In this state, the customer can 
+# still abort channel establishment by calling the reclaimFunding entrypoint to get back their 
+# deposited funds. For channels funded by the customer alone, this state is skipped.
 AWAITING_MERCH_FUNDING = 1
+# OPEN - The contract is fully funded and the channel is open. From here the channel must be closed
+# by calling one of the following entrypoints: expiry, custClose, mutualClose.
 OPEN = 2
+# EXPIRY - The merchant has initiated a unilateral channel closure by calling the expiry 
+# entrypoint. delayExpiry is set to the time when the merchant will be able to claim the total 
+# channel balance (using the merchClaim entrypoint) if the customer does not call custClose.
 EXPIRY = 3
+# CUST_CLOSE - The customer has called custClose (either from an OPEN or EXPIRY state). delayExpiry
+# is set to the time when the customer will be able to claim their balance (using the custClaim 
+# entrypoint). 
 CUST_CLOSE = 4
+# CLOSED - The channel balances have been paid out and no further activity can happen with the 
+# channel. This status can be reached after custClaim, merchClaim, merchDispute, or mutualClose.
 CLOSED = 5
+# FUNDING_RECLAIMED - The customer aborted channel establishment after funding their side of the 
+# channel. The customer's funds have been returned back to them and no further activity can happen
+# with the channel. 
 FUNDING_RECLAIMED = 6
 
  # This is the value of the identity element in the elliptic curve pairing group G1 from BLS12-381 
@@ -34,34 +53,42 @@ class ZkChannel(sp.Contract):
     # Returns true if this element is the identity element (the point at infinity).
     @sp.global_lambda
     def is_g1_identity(val):
-        packed_s1 = sp.pack(val)
-        packed_zero = sp.to_constant(sp.pack(sp.bls12_381_g1(IDENTITY_IN_G1)))
-        sp.result(packed_s1 == packed_zero)
+        # 'packed' denotes data that have been serialized with the pack function. Converting data 
+        # to its serialized representation is a trick to make the equality check possible.
+        packed_sigma1 = sp.pack(val)
+        packed_identity = sp.to_constant(sp.pack(sp.bls12_381_g1(IDENTITY_IN_G1)))
+        sp.result(packed_sigma1 == packed_identity)
 
     # __init__ initializes the contract's storage at the time of origination. All the arguments 
     # must be provided in the origination operation. 
     def __init__(self, cid, custAddr, merchAddr, custPk, merchPk, custFunding, merchFunding, selfDelay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_flag):
         self.init(
                   cid               = cid,              # the unique identifier for the channel.
-                  custAddr          = custAddr,         # customer tz1 address (linked to custPk)
-                  merchAddr         = merchAddr,        # merchant tz1 address (linked to merchPk)
+                  custAddr          = custAddr,         # customer tz1 address (derived from custPk).
+                  merchAddr         = merchAddr,        # merchant tz1 address (derived from merchPk).
                   custPk            = custPk,           # customer tezos public key
                   merchPk           = merchPk,          # merchant tezos public key
-                  custBal           = custFunding,      # customer's balance
-                  merchBal          = merchFunding,     # merchant's balance
-                  status            = sp.nat(AWAITING_CUST_FUNDING), # contract status
-                  revLock           = sp.bytes("0x00"), # revLock initialized to 0x00
+                  custBal           = custFunding,      # customer's balance. The contract is initialized with this value set to the customer's initial balance. The initial balance must be funded in one operation using the addCustFunding entrypoint. If custClose is called, custBal stores the customer's closing balance.
+                  merchBal          = merchFunding,     # merchant's balance. The contract is initialized with this value set to the merchant's initial balance. If the channel is funded by the customer alone, merchBal is set to 0 and addMerchFunding is not called. If it is a dual funded channel, the merchant's initial balance must be funded in one operation using the addMerchFunding entrypoint.  
+                  status            = sp.nat(AWAITING_CUST_FUNDING), # contract status. See above 
+                    # for all the possible zkChannel contract statuses.
+                  revLock           = sp.bytes("0x00"), # revLock initialized to 0x00. When the 
+                    # customer calls custClose, the revocation lock will be passed in as an argument
+                    # and stored in revLock. If the merchant has the revocation secret corresponding
+                    # to revLock, they can claim the entire balance using the merchDispute entrypoint.
                   selfDelay         = selfDelay,        # An enforced delay period that must have
-                  # elapsed between calling custClose and custClaim, and between calling expiry and merchClaim.
-                  delayExpiry       = sp.timestamp(0),  # if the delay is triggered, delayExpiry records when the delay is due to expire
-                  g2                = g2,               # PS pubkey
-                  y2s_0             = y2s_0,            # PS pubkey
-                  y2s_1             = y2s_1,            # PS pubkey
-                  y2s_2             = y2s_2,            # PS pubkey
-                  y2s_3             = y2s_3,            # PS pubkey
-                  y2s_4             = y2s_4,            # PS pubkey
-                  x2                = x2,               # PS pubkey
-                  close_flag        = close_flag,
+                    # elapsed between calling custClose and custClaim, and between calling expiry and merchClaim.
+                  delayExpiry       = sp.timestamp(0),  # if the delay is triggered, delayExpiry 
+                    #records when the delay is due to expire.
+                  g2                = g2,               # Pointcheval Sanders pubkey
+                  y2s_0             = y2s_0,            # Pointcheval Sanders pubkey
+                  y2s_1             = y2s_1,            # Pointcheval Sanders pubkey
+                  y2s_2             = y2s_2,            # Pointcheval Sanders pubkey
+                  y2s_3             = y2s_3,            # Pointcheval Sanders pubkey
+                  y2s_4             = y2s_4,            # Pointcheval Sanders pubkey
+                  x2                = x2,               # Pointcheval Sanders pubkey
+                  close_flag        = close_flag,       # A fixed scalar included in the message of
+                    # Pointcheval Sanders closing signature when calling custClose.
                   context_string    = sp.string("zkChannels mutual close"))
 
     # addCustFunding is called by the customer to fund their portion of the channel (according to
@@ -75,7 +102,7 @@ class ZkChannel(sp.Contract):
         sp.verify(self.data.status == AWAITING_CUST_FUNDING)
         # Verify that the operation amount matches custBal. 
         sp.verify(sp.amount == self.data.custBal)        
-        # If it is a single funded channel, set the channel status to OPEN. Else, set the channel 
+        # If the channel is funded by the customer alone, set the channel status to OPEN. Else, set the channel 
         # status to AWAITING_MERCH_FUNDING.
         sp.if self.data.merchBal == sp.mutez(0):
             self.data.status = OPEN
@@ -84,8 +111,8 @@ class ZkChannel(sp.Contract):
 
     # addMerchFunding is called by the merchant to fund their portion of the channel (according to
     # the amount specified by merchFunding). The full amount must be funded in one transaction. The
-    # merchant must fund their side of the channel after the customer. This step step is skipped 
-    # for single funded channels.
+    # merchant must fund their side of the channel after the customer. This step is skipped 
+    # for channels funded by the customer alone.
     @sp.entry_point
     def addMerchFunding(self):
         # Only allow the merchant to call the entrypoint.
@@ -128,10 +155,12 @@ class ZkChannel(sp.Contract):
         # The time is calculated by adding the number of seconds in selfDelay to timestamp of
         # the block it is confirmed in.
         self.data.delayExpiry = sp.now.add_seconds(self.data.selfDelay)
+        # Set the channel status to EXPIRY.
         self.data.status = EXPIRY
  
-    # merchClaim can only be called by the merchant after the expiry entrypoint has been called and # the delay period defined by selfDelay has elapsed. If the customer calls custClose, merchClaim
-    # cannot be called.
+    # merchClaim can only be called by the merchant after the expiry entrypoint has been called and # the delay period defined by selfDelay has elapsed. If merchClaim is called, the total 
+    # channel balance is disbursed to the merchant. The customer may call custClose during the 
+    # delay period. If custClose is called before merchClaim, merchClaim can no longer be called.
     @sp.entry_point
     def merchClaim(self):
         # Only allow the merchant to call the entrypoint.
@@ -142,22 +171,26 @@ class ZkChannel(sp.Contract):
         sp.verify(sp.now > self.data.delayExpiry)
         # Send the total balance to the merchant.
         sp.send(self.data.merchAddr, self.data.custBal + self.data.merchBal)
+        # Set the channel status to CLOSED.
         self.data.status = CLOSED
 
-    # custClose can be called by the customer to initiate a unilateral channel closure. It can only 
-    # be called by the customer while the channel status is OPEN or EXPIRY. The entrypoint 
-    # validates the merchant's blind signature over a tuple containing the channel ID, close flag, 
-    # rev lock, customer closing balance and merchant closing balance.
+    # custClose can be called by the customer to initiate a unilateral channel closure or update 
+    # closing balances following an expiry entrypoint call. It can only be called by the customer 
+    # while the channel status is OPEN or EXPIRY. The entrypoint validates the merchant's 
+    # Pointcheval Sanders signature over a tuple containing the channel ID, close flag, rev lock, 
+    # customer closing balance and merchant closing balance. The inputs to the entrypoint are the 
+    # closing balances (custBal, merchBal), the revocation lock (revLock), and the 
+    # Pointcheval Sanders closing signature (sigma1, sigma2).
     @sp.entry_point
-    def custClose(self, custBal, merchBal, revLock, s1, s2):
+    def custClose(self, custBal, merchBal, revLock, sigma1, sigma2):
         # Only allow the customer to call the entrypoint.
         sp.verify(self.data.custAddr == sp.sender)
         # Verify that the contract status is either OPEN or EXPIRY.
         sp.verify((self.data.status == OPEN) | (self.data.status == EXPIRY))
 
-        ## Start of PS signature verification 
-        # Fail if s1 is set to the identity element.
-        sp.verify(self.is_g1_identity(s1)==False)
+        ## Start of Pointcheval Sanders signature verification 
+        # Fail if sigma1 is set to the identity element.
+        sp.verify(self.is_g1_identity(sigma1)==False)
         # Prepare pairing check inputs
         g2 = self.data.g2
         y2s0 = self.data.y2s_0
@@ -179,7 +212,7 @@ class ZkChannel(sp.Contract):
         rev_lock_packed = sp.local('rev_lock_packed', sp.concat([sp.bytes("0x050a00000020"), revLock]))
         rev_lock_b = sp.local('rev_lock_b', sp.unpack(rev_lock_packed.value, t = sp.TBls12_381_fr).open_some())
 
-        # Verify PS signature against the message
+        # Verify Pointcheval Sanders signature against the message
         pk = [y2s0, y2s1, y2s2, y2s3, y2s4]
         # the message is composed of the channel ID, close flag, rev lock, cust closing balance and 
         # merchant closing balance.
@@ -188,8 +221,8 @@ class ZkChannel(sp.Contract):
         for i in range(0, len(msg)):
             prod1.value += sp.mul(pk[i], msg[i])
         # Compute the pairing check.
-        sp.verify(sp.pairing_check([sp.pair(s1, prod1.value), sp.pair(s2, -g2)]), message="pairing check failed")
-        ## End of PS signature verification
+        sp.verify(sp.pairing_check([sp.pair(sigma1, prod1.value), sp.pair(sigma2, -g2)]), message="pairing check failed")
+        ## End of Pointcheval Sanders signature verification
 
         # Update the closing balances in the contract storage.  
         self.data.custBal = custBal
@@ -222,6 +255,7 @@ class ZkChannel(sp.Contract):
         sp.verify(sp.concat(revlock_be.value) == sp.sha3(secret))
         # Send the customer's (revoked) balance to the merchant
         sp.send(self.data.merchAddr, self.data.custBal)
+        # Set the channel status to CLOSED.
         self.data.status = CLOSED
  
     # custClaim can be called by the customer to claim their balance, but only
@@ -236,11 +270,15 @@ class ZkChannel(sp.Contract):
         sp.verify(sp.now > self.data.delayExpiry)
         # Send the customer's balance to the customer.
         sp.send(self.data.custAddr, self.data.custBal)
+        # Set the channel status to CLOSED.
         self.data.status = CLOSED
  
     # mutualClose can only be called by the customer and allows for an instant withdrawal
-    # of the funds. mutualClose requires an EdDSA signature from the merchant over a 
-    # tuple containing the contract-id, context-string, cid, custBal, and merchBal.
+    # of the funds. mutualClose requires an EdDSA signature from the merchant over a tuple 
+    # containing the contract-id, context-string, cid, custBal, and merchBal. The contract-id is
+    # the KT1 address of the zkChannel contract. The context-string is defined in the contract 
+    # storage. The contract-id and context-string are used to bind the signature to the type of 
+    # channel closure and the contract.
     @sp.entry_point
     def mutualClose(self, custBal, merchBal, merchSig):
         # Only allow the customer to call the entrypoint.
@@ -264,6 +302,7 @@ class ZkChannel(sp.Contract):
             sp.send(self.data.custAddr, custBal)
         sp.if merchBal != sp.tez(0):
             sp.send(self.data.merchAddr, merchBal)
+        # Set the channel status to CLOSED.
         self.data.status = CLOSED
  
  
@@ -291,12 +330,12 @@ def test():
     custFunding = sp.tez(5)
     merchFunding = sp.tez(0)
     g2 = sp.bls12_381_g2(PUB_GEN_G2)
-    y2s_0 = sp.bls12_381_g2(MERCH_PK0_G2)
-    y2s_1 = sp.bls12_381_g2(MERCH_PK1_G2)
-    y2s_2 = sp.bls12_381_g2(MERCH_PK2_G2)
-    y2s_3 = sp.bls12_381_g2(MERCH_PK3_G2)
-    y2s_4 = sp.bls12_381_g2(MERCH_PK4_G2)
-    x2 = sp.bls12_381_g2(MERCH_PK5_G2)
+    y2s_0 = sp.bls12_381_g2(Y2S_0_G2)
+    y2s_1 = sp.bls12_381_g2(Y2S_1_G2)
+    y2s_2 = sp.bls12_381_g2(Y2S_2_G2)
+    y2s_3 = sp.bls12_381_g2(Y2S_3_G2)
+    y2s_4 = sp.bls12_381_g2(Y2S_4_G2)
+    x2 = sp.bls12_381_g2(X2_G2)
 
     # Correct closing balances for the sample signature
     custBal = sp.tez(4)
@@ -328,8 +367,8 @@ def test():
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal,
         merchBal = merchBal,
-        s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust, now = sp.timestamp(0))
     scenario.h3("unsuccessful custClaim attempt before delay period")
     scenario += cClaim.custClaim().run(sender = aliceCust, now = sp.timestamp(1), valid = False)
@@ -347,8 +386,8 @@ def test():
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
-        s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust)
     scenario.h3("merchDispute called with incorrect secret")
     scenario += mDisp.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
@@ -368,8 +407,8 @@ def test():
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
-        s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust)
  
     scenario.h2("Scenario 5: escrow -> mutualClose")
@@ -401,8 +440,8 @@ def test():
         revLock = sp.bytes(INVALID_REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
-        s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust, valid = False)    
 
     scenario.h3("Invalid revLock value")
@@ -411,8 +450,8 @@ def test():
         revLock = sp.bytes(INVALID_REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
-        s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid cust balance")
@@ -421,8 +460,8 @@ def test():
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = sp.tez(5), 
         merchBal = merchBal, 
-        s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid merch balance")
@@ -431,31 +470,31 @@ def test():
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = sp.tez(0), 
-        s1 = sp.bls12_381_g1(SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid closing signature length")
     # Invalid closing signature length (95 bytes instead of 96 bytes)
-    INVALID_SIG_S1_G1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49a"
-    INVALID_SIG_S2_G1 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d"
+    INVALID_SIGMA_1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49a"
+    INVALID_SIGMA_2 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d"
     scenario += failCust.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
-        s1 = sp.bls12_381_g1(INVALID_SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(INVALID_SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(INVALID_SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(INVALID_SIGMA_2)
         ).run(sender = aliceCust, valid = False)
         
     scenario.h3("Invalid closing signature value")
-    INVALID_SIG_S1_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    INVALID_SIG_S2_G1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    INVALID_SIGMA_1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    INVALID_SIGMA_2 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
     scenario += failCust.custClose(
         revLock = sp.bytes(REV_LOCK_FR), 
         custBal = custBal, 
         merchBal = merchBal, 
-        s1 = sp.bls12_381_g1(INVALID_SIG_S1_G1), 
-        s2 = sp.bls12_381_g1(INVALID_SIG_S2_G1)
+        sigma1 = sp.bls12_381_g1(INVALID_SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(INVALID_SIGMA_2)
         ).run(sender = aliceCust, valid = False)
 
 
