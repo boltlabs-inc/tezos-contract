@@ -24,5 +24,5 @@ We'll need to download [PyTezos](https://github.com/baking-bad/pytezos) to inter
 
 You should be able to run `zkchannel_edo2net_broadcaster.py` using the files in the `sample_files` folder as follows. The arguments `--cust` and `--merch` specify testnet accounts that can be used on edo2net. `--custclose` and `--merchclose` correspond to json files that the customer and merchant would receive respectively from libzkchannels when a channel closure is initiated. 
 ```
-    $ python3 zkchannel_edo2net_broadcaster.py --contract=../zkchannels-contract/zkchannel_contract.tz --cust=sample_files/tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json --merch=sample_files/tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json --custclose=sample_files/cust_close.json --merchclose=sample_files/merch_close.json 
+    $ python3 zkchannel_edo2net_broadcaster.py --contract=../zkchannels-contract/zkchannel_contract.tz --cust=sample_files/tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json --merch=sample_files/tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json --establish=sample_files/out.5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67.establish.json --cust-close=sample_files/out.5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67.close.json
 ```
