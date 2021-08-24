@@ -44,7 +44,7 @@ CLOSED = 5
 FUNDING_RECLAIMED = 6
 
  # This is the value of the identity element in the elliptic curve pairing group G1 from BLS12-381 
- # (i.e., the point at infinity on BLS12-381).
+ # This is the uncompressed representation of the point at infinity of BLS12-381, ie it is 192 bytes long.
 IDENTITY_IN_G1 = "0x400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
  
 
@@ -56,6 +56,8 @@ class ZkChannel(sp.Contract):
         # 'packed' denotes data that have been serialized with the pack function. Converting data 
         # to its serialized representation is a trick to make the equality check possible.
         packed_sigma1 = sp.pack(val)
+        # sp.bls12_381_g1(BYTES) results in `PUSH bls12_381_g1 BYTES`.
+        # This construction must stay valid in future Tezos protocols.
         packed_identity = sp.to_constant(sp.pack(sp.bls12_381_g1(IDENTITY_IN_G1)))
         sp.result(packed_sigma1 == packed_identity)
 
@@ -221,19 +223,33 @@ class ZkChannel(sp.Contract):
         cid = self.data.cid
         close_b = self.data.close_scalar
 
-        # Convert balances from mutez -> fr
+        # Convert customer balance from mutez -> BLS12_381_fr (the scalar field of BLS12-381)
+        # Mutez are encoded as 64-bit signed integers, so input must be smaller than the order of BLS12-381_fr
+        # Use EDIV (Euclidean division) to convert mutez -> nat
         cust_b = sp.local('cust_b', sp.fst(sp.ediv(customer_balance, sp.mutez(1)).open_some()))
+        # Use MUL to convert nat -> bls12_381_fr
+        # Multiplies by the multiplicative identity of BLS12_381_fr using PUSH bls12_381_fr_1; MUL
+        # Product is computed modulo the order of BLS12_381_fr
         cust_bal_b = sp.local("cust_bal_b", sp.mul(cust_b.value, sp.bls12_381_fr("0x01")))
+
+        # Convert merchant balance from mutez -> BLS12_381_fr (the scalar field of BLS12-381)
+        # Mutez are encoded as 64-bit signed integers, so input must be smaller than the order of BLS12-381_fr
+        # Use EDIV (Euclidean division) to convert mutez -> nat
         merch_b = sp.local('merch_b', sp.fst(sp.ediv(merchant_balance, sp.mutez(1)).open_some()))
+        # Use MUL to convert nat -> bls12_381_fr 
+        # Multiplies by the multiplicative identity of BLS12_381_fr using PUSH bls12_381_fr_1; MUL
+        # Product is computed modulo the order of BLS12_381_fr
         merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, sp.bls12_381_fr("0x01")))
 
-        # Convert the rev_lock from bytes -> fr
+        # Convert revocation_lock from bytes -> fr
+        # 0x050a000000 is the prefix for Fr elements in Michelson
+        # 0x20 following this prefix means 32 bytes (0x20 in hexa) are expected next
         rev_lock_packed = sp.local('rev_lock_packed', sp.concat([sp.bytes("0x050a00000020"), revocation_lock]))
         rev_lock_b = sp.local('rev_lock_b', sp.unpack(rev_lock_packed.value, t = sp.TBls12_381_fr).open_some())
 
         # Verify Pointcheval Sanders signature against the message
         pk = [y2s0, y2s1, y2s2, y2s3, y2s4]
-        # the message is composed of the channel ID, close flag, rev lock, cust closing balance and 
+        # the message is composed of the channel ID, close flag, revocation lock, cust closing balance and 
         # merchant closing balance.
         msg = [cid, close_b, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value]
         prod1 = sp.local('prod1', x2)
