@@ -1,7 +1,9 @@
 # This smart contract implements the zkchannel flow
 import smartpy as sp
- 
-# sample inputs for scenario tests
+
+# generate sample inputs for scenario tests after successfully establishing the channel,
+# make at least one payment and then proceed to close the channel as follows (in off chain mode)
+# $ ./target/debug/zkchannel customer --config "./dev/Customer.toml" close --force my-zkchannel --off-chain
 CID_FR = "0x5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67"
 REV_LOCK_FR = "0x7723ecf912ca83f8c637e7341699dad476ba971506cbf5f6bdaaac313b761c2f"
 SIGMA_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cf"
