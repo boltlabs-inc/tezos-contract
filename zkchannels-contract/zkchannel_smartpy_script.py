@@ -1,8 +1,10 @@
 # This smart contract implements the zkchannel flow
 import smartpy as sp
 
+# build zeekoe source as follows:
+# $ CARGO_NET_GIT_FETCH_WITH_CLI=true cargo build --features "allow_explicit_certificate_trust"
 # generate sample inputs for scenario tests after successfully establishing the channel,
-# make at least one payment and then proceed to close the channel as follows (in off chain mode)
+# make at least one payment and then proceed to close the channel as follows (in off chain mode):
 # $ ./target/debug/zkchannel customer --config "./dev/Customer.toml" close --force my-zkchannel --off-chain
 CID_FR = "0x5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67"
 REV_LOCK_FR = "0x7723ecf912ca83f8c637e7341699dad476ba971506cbf5f6bdaaac313b761c2f"
