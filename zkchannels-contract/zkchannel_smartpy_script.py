@@ -67,7 +67,7 @@ class ZkChannel(sp.Contract):
 
     # __init__ initializes the contract's storage at the time of origination. All the arguments 
     # must be provided in the origination operation. 
-    def __init__(self, cid, customer_address, merchant_address, customer_public_key, merchant_public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar):
+    def __init__(self, cid: sp.TBls12_381_fr, customer_address: sp.TAddress, merchant_address: sp.TAddress, customer_public_key: sp.TKey, merchant_public_key: sp.TKey, custFunding: sp.TMutez, merchFunding: sp.TMutez, self_delay: sp.TInt, g2: sp.TBls12_381_g2, y2s_0: sp.TBls12_381_g2, y2s_1: sp.TBls12_381_g2, y2s_2: sp.TBls12_381_g2, y2s_3: sp.TBls12_381_g2, y2s_4: sp.TBls12_381_g2, x2: sp.TBls12_381_g2, close_scalar: sp.TBls12_381_fr):
         self.init(
             # the unique identifier for the channel.
             cid                 = cid,
@@ -207,7 +207,7 @@ class ZkChannel(sp.Contract):
     # closing balances (customer_balance, merchant_balance), the revocation lock (revocation_lock), and the 
     # Pointcheval Sanders closing signature (sigma1, sigma2).
     @sp.entry_point
-    def custClose(self, customer_balance, merchant_balance, revocation_lock, sigma1, sigma2):
+    def custClose(self, customer_balance: sp.TMutez, merchant_balance: sp.TMutez, revocation_lock: sp.TBytes, sigma1: sp.TBls12_381_g1, sigma2: sp.TBls12_381_g1):
         # Only allow the customer to call the entrypoint.
         sp.verify(self.data.customer_address == sp.sender)
         # Verify that the contract status is either OPEN or EXPIRY.
