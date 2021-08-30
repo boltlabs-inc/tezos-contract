@@ -79,6 +79,9 @@ class ZkChannel(sp.Contract):
         # A fixed scalar included in the message of Pointcheval Sanders closing signature when 
         # calling custClose.
         self.close_scalar       = close_scalar
+        # An enforced delay period that must have elapsed between calling custClose and 
+        # custClaim, and between calling expiry and merchClaim.
+        self.self_delay         = self_delay
         self.init(
             # the unique identifier for the channel.
             cid                 = cid,
@@ -108,9 +111,6 @@ class ZkChannel(sp.Contract):
             # revocation secret corresponding to revocation_lock, they can claim the entire balance using 
             # the merchDispute entrypoint.
             revocation_lock      = sp.bytes("0x00"),
-            # An enforced delay period that must have elapsed between calling custClose and 
-            # custClaim, and between calling expiry and merchClaim.
-            self_delay           = self_delay,
             # if the delay is triggered, delay_expiry records when the delay is due to expire.
             delay_expiry         = sp.timestamp(0),
             # context_string is contained in the tuple that gets signed when creating the mutual 
@@ -180,7 +180,7 @@ class ZkChannel(sp.Contract):
         # Record the time when the delay period will expire with self.data.delay_expiry.
         # The time is calculated by adding the number of seconds in self_delay to timestamp of
         # the block it is confirmed in.
-        self.data.delay_expiry = sp.now.add_seconds(self.data.self_delay)
+        self.data.delay_expiry = sp.now.add_seconds(self.self_delay)
         # Set the channel status to EXPIRY.
         self.data.status = EXPIRY
  
@@ -262,7 +262,7 @@ class ZkChannel(sp.Contract):
         # Set delay_expiry to the current time plus the specified delay period, self_delay. When 
         # delay_expiry has passed, the customer will be able to claim their balance by calling 
         # custClaim. 
-        self.data.delay_expiry = sp.now.add_seconds(self.data.self_delay)
+        self.data.delay_expiry = sp.now.add_seconds(self.self_delay)
         # Pay merchant immediately (unless amount is 0).
         sp.if merchant_balance != sp.tez(0):
             sp.send(self.data.merchant_address, merchant_balance)
