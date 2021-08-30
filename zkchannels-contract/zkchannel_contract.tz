@@ -1,5 +1,5 @@
 parameter (or (or (or (unit %addCustFunding) (unit %addMerchFunding)) (or (unit %custClaim) (pair %custClose (pair (mutez %customer_balance) (mutez %merchant_balance)) (pair (bytes %revocation_lock) (pair (bls12_381_g1 %sigma1) (bls12_381_g1 %sigma2)))))) (or (or (unit %expiry) (unit %merchClaim)) (or (bytes %merchDispute) (or (pair %mutualClose (mutez %customer_balance) (pair (signature %merchSig) (mutez %merchant_balance))) (unit %reclaimFunding)))));
-storage   (pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))));
+storage   (pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))));
 code
   {
     # Global variable: is_g1_identity # pair @parameter @storage
@@ -27,8 +27,9 @@ code
                 # == addCustFunding ==
                 # sp.verify(self.data.customer_address == sp.sender) # @storage
                 DUP;        # @storage : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @storage
-                GET 3;      # address : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : @storage
+                CDR;        # address : @storage
                 SENDER;     # @sender : address : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -52,8 +53,8 @@ code
                   }; # @storage
                 # sp.verify(sp.amount == self.data.customer_balance) # @storage
                 DUP;        # @storage : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @storage
-                GET 5;      # mutez : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                GET 3;      # mutez : @storage
                 AMOUNT;     # @amount : mutez : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -65,8 +66,8 @@ code
                   }; # @storage
                 # if self.data.merchant_balance == sp.tez(0): # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                GET 4;      # mutez : @storage
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage
+                CDR;        # mutez : @storage
                 PUSH mutez 0; # mutez : mutez : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -87,8 +88,8 @@ code
                 # == addMerchFunding ==
                 # sp.verify(self.data.merchant_address == sp.sender) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                GET 3;      # address : @storage
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage
+                CAR;        # address : @storage
                 SENDER;     # @sender : address : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -112,8 +113,8 @@ code
                   }; # @storage
                 # sp.verify(sp.amount == self.data.merchant_balance) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                GET 4;      # mutez : @storage
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage
+                CDR;        # mutez : @storage
                 AMOUNT;     # @amount : mutez : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -138,8 +139,9 @@ code
                 # == custClaim ==
                 # sp.verify(self.data.customer_address == sp.sender) # @storage
                 DUP;        # @storage : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @storage
-                GET 3;      # address : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : @storage
+                CDR;        # address : @storage
                 SENDER;     # @sender : address : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -163,8 +165,8 @@ code
                   }; # @storage
                 # sp.verify(sp.now > self.data.delay_expiry) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                CAR;        # timestamp : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                GET 6;      # timestamp : @storage
                 NOW;        # @now : timestamp : @storage
                 COMPARE;    # int : @storage
                 GT;         # bool : @storage
@@ -176,8 +178,9 @@ code
                   }; # @storage
                 # sp.send(self.data.customer_address, self.data.customer_balance) # @storage
                 DUP;        # @storage : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @storage
-                GET 3;      # address : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : @storage
+                CDR;        # address : @storage
                 CONTRACT unit; # option (contract unit) : @storage
                 IF_NONE
                   {
@@ -188,8 +191,8 @@ code
                 NIL operation; # list operation : @some : @storage
                 SWAP;       # @some : list operation : @storage
                 DUP 3;      # @storage : @some : list operation : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @some : list operation : @storage
-                GET 5;      # mutez : @some : list operation : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @some : list operation : @storage
+                GET 3;      # mutez : @some : list operation : @storage
                 UNIT;       # unit : mutez : @some : list operation : @storage
                 TRANSFER_TOKENS; # operation : list operation : @storage
                 CONS;       # list operation : @storage
@@ -204,8 +207,9 @@ code
                 # sp.verify(self.data.customer_address == sp.sender) # @parameter%custClose : @storage : lambda bls12_381_g1 bool
                 SENDER;     # @sender : @parameter%custClose : @storage : lambda bls12_381_g1 bool
                 DUP 3;      # @storage : @sender : @parameter%custClose : @storage : lambda bls12_381_g1 bool
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @sender : @parameter%custClose : @storage : lambda bls12_381_g1 bool
-                GET 3;      # address : @sender : @parameter%custClose : @storage : lambda bls12_381_g1 bool
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @sender : @parameter%custClose : @storage : lambda bls12_381_g1 bool
+                CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : @sender : @parameter%custClose : @storage : lambda bls12_381_g1 bool
+                CDR;        # address : @sender : @parameter%custClose : @storage : lambda bls12_381_g1 bool
                 COMPARE;    # int : @parameter%custClose : @storage : lambda bls12_381_g1 bool
                 EQ;         # bool : @parameter%custClose : @storage : lambda bls12_381_g1 bool
                 IF
@@ -303,8 +307,8 @@ code
                 PUSH bls12_381_g2 0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e62750d699bd13647089278a1e6cc490986f181529059281216c836f054f392efb90b4890a57e46f43f7dc5a8faf0fe41a1b2cd54402dd0af86b78c3a8e175daf9530a2d9d970935dc3e93463565b431d38e13456092bce8da73ed1c2274a02dd29e1e3e0dda7a6f1e0f6c67ab741b4cc20212dcab1cad18c655264f6f56a9ad1a383be2cd0c72d2fdb59ffea76cb1c9d57f84a0d82ea391579bb5e11bc61e40d136; # bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
                 # prod1.value += sp.mul(sp.bls12_381_g2('0x1249832415369e4a3043e21040b95583b7a868b9e73ff520884dd622b694defdfefe31ef0c11ec0956f2ac25b75f4ae00758ec3afe7d5160b2e9310954e5565e83b632d7075429dbd08ad795da021b2d175e49a6e4a402a387933fe5fd6c74b80c097ece2ae44bfe10347cf753165cfe80aea3823f7d140671afad20b620cc089f29f9c4095a8a9cf412290dfef1f8811399067199e2b871477921c38bd7ca53bbb8a89747c51f56ad35ce9f45c1a890417b77076673a683e23a98e23464598f'), self.data.cid) # bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
                 DUP 6;      # @storage : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
-                CAR;        # pair (bls12_381_fr %cid) (string %context_string) : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
+                CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
                 CAR;        # bls12_381_fr : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
                 PUSH bls12_381_g2 0x1249832415369e4a3043e21040b95583b7a868b9e73ff520884dd622b694defdfefe31ef0c11ec0956f2ac25b75f4ae00758ec3afe7d5160b2e9310954e5565e83b632d7075429dbd08ad795da021b2d175e49a6e4a402a387933fe5fd6c74b80c097ece2ae44bfe10347cf753165cfe80aea3823f7d140671afad20b620cc089f29f9c4095a8a9cf412290dfef1f8811399067199e2b871477921c38bd7ca53bbb8a89747c51f56ad35ce9f45c1a890417b77076673a683e23a98e23464598f; # bls12_381_g2 : bls12_381_fr : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
                 MUL;        # bls12_381_g2 : bls12_381_g2 : @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
@@ -351,79 +355,80 @@ code
                   }; # @parameter%custClose : @storage
                 SWAP;       # @storage : @parameter%custClose
                 # self.data.customer_balance = params.customer_balance # @storage : @parameter%custClose
-                UNPAIR;     # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                UNPAIR;     # pair (bls12_381_fr %cid) (string %context_string) : pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                SWAP;       # pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)) : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                UNPAIR;     # address : pair (mutez %customer_balance) (key %customer_public_key) : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                SWAP;       # pair (mutez %customer_balance) (key %customer_public_key) : address : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                CDR;        # key : address : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                DUP 5;      # @parameter%custClose : key : address : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                CAR;        # pair (mutez %customer_balance) (mutez %merchant_balance) : key : address : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                CAR;        # mutez : key : address : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                PAIR;       # pair mutez key : address : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                SWAP;       # address : pair mutez key : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                PAIR;       # pair address (pair mutez key) : pair (bls12_381_fr %cid) (string %context_string) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                SWAP;       # pair (bls12_381_fr %cid) (string %context_string) : pair address (pair mutez key) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                PAIR;       # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                PAIR;       # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
-                SWAP;       # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                # self.data.revocation_lock = params.revocation_lock # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                DUP;        # @parameter%custClose : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                DUG 2;      # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
-                GET 3;      # bytes : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
-                UPDATE 7;   # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
-                # self.data.delay_expiry = sp.add_seconds(sp.now, 3) # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
-                UNPAIR;     # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                SWAP;       # pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                UNPAIR;     # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                CDR;        # pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                NOW;        # @now : pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                PUSH int 3; # int : @now : pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                ADD;        # timestamp : pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                PAIR;       # pair timestamp (pair (address %merchant_address) (mutez %merchant_balance)) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                PAIR;       # pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : @parameter%custClose
-                SWAP;       # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key)) : pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
-                PAIR;       # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
-                SWAP;       # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                # if params.merchant_balance != sp.tez(0): # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                DUP;        # @parameter%custClose : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                CAR;        # pair (mutez %customer_balance) (mutez %merchant_balance) : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                CDR;        # mutez : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                PUSH mutez 0; # mutez : mutez : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                COMPARE;    # int : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                NEQ;        # bool : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                UNPAIR;     # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                UNPAIR;     # pair (bls12_381_fr %cid) (address %customer_address) : pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                SWAP;       # pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                CDR;        # pair (key %customer_public_key) (timestamp %delay_expiry) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                DUP 4;      # @parameter%custClose : pair (key %customer_public_key) (timestamp %delay_expiry) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                CAR;        # pair (mutez %customer_balance) (mutez %merchant_balance) : pair (key %customer_public_key) (timestamp %delay_expiry) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                CAR;        # mutez : pair (key %customer_public_key) (timestamp %delay_expiry) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PAIR;       # pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                SWAP;       # pair (bls12_381_fr %cid) (address %customer_address) : pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PAIR;       # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry))) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PAIR;       # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
+                SWAP;       # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                # self.data.revocation_lock = params.revocation_lock # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                DUP;        # @parameter%custClose : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                DUG 2;      # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
+                GET 3;      # bytes : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
+                UPDATE 7;   # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
+                # self.data.delay_expiry = sp.add_seconds(sp.now, 3) # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
+                UNPAIR;     # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry))) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                UNPAIR;     # pair (bls12_381_fr %cid) (address %customer_address) : pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                SWAP;       # pair mutez (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                UNPAIR;     # mutez : pair (key %customer_public_key) (timestamp %delay_expiry) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                SWAP;       # pair (key %customer_public_key) (timestamp %delay_expiry) : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                CAR;        # key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                NOW;        # @now : key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PUSH int 3; # int : @now : key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                ADD;        # timestamp : key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                SWAP;       # key : timestamp : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PAIR;       # pair key timestamp : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                SWAP;       # mutez : pair key timestamp : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PAIR;       # pair mutez (pair key timestamp) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                SWAP;       # pair (bls12_381_fr %cid) (address %customer_address) : pair mutez (pair key timestamp) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PAIR;       # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp)) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : @parameter%custClose
+                PAIR;       # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : @parameter%custClose
+                SWAP;       # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                # if params.merchant_balance != sp.tez(0): # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                DUP;        # @parameter%custClose : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                CAR;        # pair (mutez %customer_balance) (mutez %merchant_balance) : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                CDR;        # mutez : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                PUSH mutez 0; # mutez : mutez : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                COMPARE;    # int : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                NEQ;        # bool : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
                 IF
                   {
-                    # sp.send(self.data.merchant_address, params.merchant_balance) # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    NIL operation; # list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    DUP 3;      # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    GET 3;      # pair timestamp (pair (address %merchant_address) (mutez %merchant_balance)) : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    GET 3;      # address : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    CONTRACT unit; # option (contract unit) : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    # sp.send(self.data.merchant_address, params.merchant_balance) # @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    NIL operation; # list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    DUP 3;      # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    CAR;        # address : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    CONTRACT unit; # option (contract unit) : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
                     IF_NONE
                       {
-                        PUSH int 268; # int : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                        PUSH int 268; # int : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
                         FAILWITH;   # FAILED
                       }
-                      {}; # @some : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    DIG 2;      # @parameter%custClose : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    CAR;        # pair (mutez %customer_balance) (mutez %merchant_balance) : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    CDR;        # mutez : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    UNIT;       # unit : mutez : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    TRANSFER_TOKENS; # operation : list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    CONS;       # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                      {}; # @some : list operation : @parameter%custClose : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    DIG 2;      # @parameter%custClose : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    CAR;        # pair (mutez %customer_balance) (mutez %merchant_balance) : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    CDR;        # mutez : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    UNIT;       # unit : mutez : @some : list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    TRANSFER_TOKENS; # operation : list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    CONS;       # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
                   }
                   {
-                    DROP;       # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                    NIL operation; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                  }; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                SWAP;       # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
-                # self.data.status = 4 # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
-                PUSH nat 4; # nat : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
-                UPDATE 8;   # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
-                SWAP;       # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-              }; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-          }; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    DROP;       # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                    NIL operation; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                  }; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                SWAP;       # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
+                # self.data.status = 4 # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
+                PUSH nat 4; # nat : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
+                UPDATE 8;   # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))) : list operation
+                SWAP;       # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+              }; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+          }; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
       }
       {
         IF_LEFT
@@ -436,8 +441,8 @@ code
                 # == expiry ==
                 # sp.verify(self.data.merchant_address == sp.sender) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                GET 3;      # address : @storage
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage
+                CAR;        # address : @storage
                 SENDER;     # @sender : address : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -460,21 +465,26 @@ code
                     FAILWITH;   # FAILED
                   }; # @storage
                 # self.data.delay_expiry = sp.add_seconds(sp.now, 3) # @storage
-                UNPAIR;     # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
-                SWAP;       # pair (pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                UNPAIR;     # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                CDR;        # pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                NOW;        # @now : pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                PUSH int 3; # int : @now : pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                ADD;        # timestamp : pair (address %merchant_address) (mutez %merchant_balance) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                PAIR;       # pair timestamp (pair (address %merchant_address) (mutez %merchant_balance)) : pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                PAIR;       # pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))) : pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))
-                SWAP;       # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
-                PAIR;       # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                # self.data.status = 3 # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                PUSH nat 3; # nat : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                UPDATE 8;   # pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-                NIL operation; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                UNPAIR;     # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                UNPAIR;     # pair (bls12_381_fr %cid) (address %customer_address) : pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                SWAP;       # pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry)) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                UNPAIR;     # mutez : pair (key %customer_public_key) (timestamp %delay_expiry) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                SWAP;       # pair (key %customer_public_key) (timestamp %delay_expiry) : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                CAR;        # key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                NOW;        # @now : key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                PUSH int 3; # int : @now : key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                ADD;        # timestamp : key : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                SWAP;       # key : timestamp : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                PAIR;       # pair key timestamp : mutez : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                SWAP;       # mutez : pair key timestamp : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                PAIR;       # pair mutez (pair key timestamp) : pair (bls12_381_fr %cid) (address %customer_address) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                SWAP;       # pair (bls12_381_fr %cid) (address %customer_address) : pair mutez (pair key timestamp) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                PAIR;       # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp)) : pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))
+                PAIR;       # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                # self.data.status = 3 # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                PUSH nat 3; # nat : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                UPDATE 8;   # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+                NIL operation; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
               }
               {
                 DROP;       # @storage : lambda bls12_381_g1 bool
@@ -483,8 +493,8 @@ code
                 # == merchClaim ==
                 # sp.verify(self.data.merchant_address == sp.sender) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                GET 3;      # address : @storage
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage
+                CAR;        # address : @storage
                 SENDER;     # @sender : address : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
@@ -508,8 +518,8 @@ code
                   }; # @storage
                 # sp.verify(sp.now > self.data.delay_expiry) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                CAR;        # timestamp : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                GET 6;      # timestamp : @storage
                 NOW;        # @now : timestamp : @storage
                 COMPARE;    # int : @storage
                 GT;         # bool : @storage
@@ -521,8 +531,8 @@ code
                   }; # @storage
                 # sp.send(self.data.merchant_address, self.data.customer_balance + self.data.merchant_balance) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                GET 3;      # address : @storage
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage
+                CAR;        # address : @storage
                 CONTRACT unit; # option (contract unit) : @storage
                 IF_NONE
                   {
@@ -534,13 +544,13 @@ code
                 SWAP;       # @some : list operation : @storage
                 DIG 2;      # @storage : @some : list operation
                 DUP;        # @storage : @storage : @some : list operation
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage : @some : list operation
-                GET 4;      # mutez : @storage : @some : list operation
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage : @some : list operation
+                CDR;        # mutez : @storage : @some : list operation
                 SWAP;       # @storage : mutez : @some : list operation
                 DUP;        # @storage : @storage : mutez : @some : list operation
                 DUG 4;      # @storage : mutez : @some : list operation : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : mutez : @some : list operation : @storage
-                GET 5;      # mutez : mutez : @some : list operation : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : mutez : @some : list operation : @storage
+                GET 3;      # mutez : mutez : @some : list operation : @storage
                 ADD;        # mutez : @some : list operation : @storage
                 UNIT;       # unit : mutez : @some : list operation : @storage
                 TRANSFER_TOKENS; # operation : list operation : @storage
@@ -550,7 +560,7 @@ code
                 PUSH nat 5; # nat : @storage : list operation
                 UPDATE 8;   # @storage : list operation
                 SWAP;       # list operation : @storage
-              }; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+              }; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
           }
           {
             IF_LEFT
@@ -559,8 +569,8 @@ code
                 # sp.verify(self.data.merchant_address == sp.sender) # @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
                 SENDER;     # @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
                 DUP 3;      # @storage : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                GET 3;      # address : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
+                CAR;        # address : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
                 COMPARE;    # int : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
                 EQ;         # bool : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
                 IF
@@ -629,8 +639,8 @@ code
                   }; # @storage
                 # sp.send(self.data.merchant_address, self.data.customer_balance) # @storage
                 DUP;        # @storage : @storage
-                GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : @storage
-                GET 3;      # address : @storage
+                GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : @storage
+                CAR;        # address : @storage
                 CONTRACT unit; # option (contract unit) : @storage
                 IF_NONE
                   {
@@ -641,8 +651,8 @@ code
                 NIL operation; # list operation : @some : @storage
                 SWAP;       # @some : list operation : @storage
                 DUP 3;      # @storage : @some : list operation : @storage
-                CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @some : list operation : @storage
-                GET 5;      # mutez : @some : list operation : @storage
+                CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @some : list operation : @storage
+                GET 3;      # mutez : @some : list operation : @storage
                 UNIT;       # unit : mutez : @some : list operation : @storage
                 TRANSFER_TOKENS; # operation : list operation : @storage
                 CONS;       # list operation : @storage
@@ -659,8 +669,9 @@ code
                     # sp.verify(self.data.customer_address == sp.sender) # @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     SENDER;     # @sender : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     DUP 3;      # @storage : @sender : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                    CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @sender : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                    GET 3;      # address : @sender : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @sender : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : @sender : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    CDR;        # address : @sender : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     COMPARE;    # int : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     EQ;         # bool : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     IF
@@ -681,7 +692,7 @@ code
                         PUSH string "WrongCondition: self.data.status == 2"; # string : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                         FAILWITH;   # FAILED
                       }; # @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                    # sp.verify(sp.check_signature(self.data.merchant_public_key, params.merchSig, sp.pack(sp.record(cid = self.data.cid, context_string = self.data.context_string, contract_id = sp.self_address, customer_balance = params.customer_balance, merchant_balance = params.merchant_balance)))) # @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    # sp.verify(sp.check_signature(self.data.merchant_public_key, params.merchSig, sp.pack(sp.record(cid = self.data.cid, context_string = 'zkChannels mutual close', contract_id = sp.self_address, customer_balance = params.customer_balance, merchant_balance = params.merchant_balance)))) # @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     DUP;        # @parameter%mutualClose : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     GET 4;      # mutez : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     SWAP;       # @parameter%mutualClose : mutez : @storage : lambda bls12_381_g1 bool
@@ -691,16 +702,10 @@ code
                     PAIR;       # pair mutez mutez : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     SELF_ADDRESS; # @self : pair mutez mutez : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     PAIR;       # pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                    DIG 2;      # @storage : pair @self (pair mutez mutez) : @parameter%mutualClose : lambda bls12_381_g1 bool
-                    DUP;        # @storage : @storage : pair @self (pair mutez mutez) : @parameter%mutualClose : lambda bls12_381_g1 bool
-                    CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @storage : pair @self (pair mutez mutez) : @parameter%mutualClose : lambda bls12_381_g1 bool
-                    CAR;        # pair (bls12_381_fr %cid) (string %context_string) : @storage : pair @self (pair mutez mutez) : @parameter%mutualClose : lambda bls12_381_g1 bool
-                    CDR;        # string : @storage : pair @self (pair mutez mutez) : @parameter%mutualClose : lambda bls12_381_g1 bool
-                    SWAP;       # @storage : string : pair @self (pair mutez mutez) : @parameter%mutualClose : lambda bls12_381_g1 bool
-                    DUP;        # @storage : @storage : string : pair @self (pair mutez mutez) : @parameter%mutualClose : lambda bls12_381_g1 bool
-                    DUG 4;      # @storage : string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                    CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                    CAR;        # pair (bls12_381_fr %cid) (string %context_string) : string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    PUSH string "zkChannels mutual close"; # string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    DUP 4;      # @storage : string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                    CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     CAR;        # bls12_381_fr : string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     PAIR;       # pair bls12_381_fr string : pair @self (pair mutez mutez) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     PAIR;       # pair (pair bls12_381_fr string) (pair @self (pair mutez mutez)) : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
@@ -715,7 +720,7 @@ code
                     IF
                       {}
                       {
-                        PUSH string "WrongCondition: sp.check_signature(self.data.merchant_public_key, params.merchSig, sp.pack(sp.record(cid = self.data.cid, context_string = self.data.context_string, contract_id = sp.self_address, customer_balance = params.customer_balance, merchant_balance = params.merchant_balance)))"; # string : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                        PUSH string "WrongCondition: sp.check_signature(self.data.merchant_public_key, params.merchSig, sp.pack(sp.record(cid = self.data.cid, context_string = 'zkChannels mutual close', contract_id = sp.self_address, customer_balance = params.customer_balance, merchant_balance = params.merchant_balance)))"; # string : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                         FAILWITH;   # FAILED
                       }; # @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                     # if params.customer_balance != sp.tez(0): # @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
@@ -729,8 +734,9 @@ code
                         # sp.send(self.data.customer_address, params.customer_balance) # @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                         NIL operation; # list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                         DUP 3;      # @storage : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                        CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
-                        GET 3;      # address : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                        CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                        CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                        CDR;        # address : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                         CONTRACT unit; # option (contract unit) : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                         IF_NONE
                           {
@@ -759,8 +765,8 @@ code
                         DROP;       # list operation : @parameter%mutualClose : @storage
                         # sp.send(self.data.merchant_address, params.merchant_balance) # list operation : @parameter%mutualClose : @storage
                         DUP 3;      # @storage : list operation : @parameter%mutualClose : @storage
-                        GET 3;      # pair (timestamp %delay_expiry) (pair (address %merchant_address) (mutez %merchant_balance)) : list operation : @parameter%mutualClose : @storage
-                        GET 3;      # address : list operation : @parameter%mutualClose : @storage
+                        GET 3;      # pair (address %merchant_address) (mutez %merchant_balance) : list operation : @parameter%mutualClose : @storage
+                        CAR;        # address : list operation : @parameter%mutualClose : @storage
                         CONTRACT unit; # option (contract unit) : list operation : @parameter%mutualClose : @storage
                         IF_NONE
                           {
@@ -793,8 +799,9 @@ code
                     # == reclaimFunding ==
                     # sp.verify(self.data.customer_address == sp.sender) # @storage
                     DUP;        # @storage : @storage
-                    CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @storage
-                    GET 3;      # address : @storage
+                    CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                    CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : @storage
+                    CDR;        # address : @storage
                     SENDER;     # @sender : address : @storage
                     COMPARE;    # int : @storage
                     EQ;         # bool : @storage
@@ -818,8 +825,9 @@ code
                       }; # @storage
                     # sp.send(self.data.customer_address, self.data.customer_balance) # @storage
                     DUP;        # @storage : @storage
-                    CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @storage
-                    GET 3;      # address : @storage
+                    CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @storage
+                    CAR;        # pair (bls12_381_fr %cid) (address %customer_address) : @storage
+                    CDR;        # address : @storage
                     CONTRACT unit; # option (contract unit) : @storage
                     IF_NONE
                       {
@@ -830,8 +838,8 @@ code
                     NIL operation; # list operation : @some : @storage
                     SWAP;       # @some : list operation : @storage
                     DUP 3;      # @storage : @some : list operation : @storage
-                    CAR;        # pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key))) : @some : list operation : @storage
-                    GET 5;      # mutez : @some : list operation : @storage
+                    CAR;        # pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (pair (key %customer_public_key) (timestamp %delay_expiry))) : @some : list operation : @storage
+                    GET 3;      # mutez : @some : list operation : @storage
                     UNIT;       # unit : mutez : @some : list operation : @storage
                     TRANSFER_TOKENS; # operation : list operation : @storage
                     CONS;       # list operation : @storage
@@ -842,13 +850,13 @@ code
                     SWAP;       # list operation : @storage
                   }; # list operation : @storage
               }; # list operation : @storage
-          }; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair (address %customer_address) (pair (mutez %customer_balance) (key %customer_public_key)))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-      }; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-    NIL operation; # list operation : list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-    SWAP;       # list operation : list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+          }; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+      }; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+    NIL operation; # list operation : list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+    SWAP;       # list operation : list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
     ITER
       {
-        CONS;       # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-      }; # list operation : pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
-    PAIR;       # pair (list operation) (pair (pair (pair (bls12_381_fr %cid) (string %context_string)) (pair address (pair mutez key))) (pair (pair timestamp (pair (address %merchant_address) (mutez %merchant_balance))) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))))
+        CONS;       # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+      }; # list operation : pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status))))
+    PAIR;       # pair (list operation) (pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez (pair key timestamp))) (pair (pair (address %merchant_address) (mutez %merchant_balance)) (pair (key %merchant_public_key) (pair (bytes %revocation_lock) (nat %status)))))
   };
