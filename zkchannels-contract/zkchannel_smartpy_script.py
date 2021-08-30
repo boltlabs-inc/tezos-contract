@@ -471,22 +471,35 @@ def test():
     failCust = ZkChannel(cid, aliceCust.address, bobMerch.address, aliceCust.public_key, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
     scenario += failCust
     scenario += failCust.addCustFunding().run(sender = aliceCust, amount = custFunding)
-    
+
     scenario.h3("Invalid revocation_lock (31 bytes instead of 32 bytes)")
-    # invalid_revocation_lock has 31 bytes instead of 32 bytes
-    INVALID_REV_LOCK_FR = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
+    # short_revocation_lock has 31 bytes instead of 32 bytes
+    short_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(INVALID_REV_LOCK_FR), 
+        revocation_lock = sp.bytes(short_revocation_lock), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
         sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)    
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid revocation_lock (33 bytes instead of 32 bytes)")
+    # long_revocation_lock has 33 bytes instead of 32 bytes
+    long_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7f7f7"
+    scenario += failCust.custClose(
+        revocation_lock = sp.bytes(long_revocation_lock), 
+        customer_balance = customer_balance, 
+        merchant_balance = merchant_balance, 
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
+        ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid revocation_lock value")
-    INVALID_REV_LOCK_FR = "0x1111111111111111111111111111111111111111111111111111111111111111"
+    # invalid_revocation_lock has the correct length (32 bytes) but does not match the 
+    # revocation_lock that the signature was produced over.
+    invalid_revocation_lock = "0x1111111111111111111111111111111111111111111111111111111111111111"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(INVALID_REV_LOCK_FR), 
+        revocation_lock = sp.bytes(invalid_revocation_lock), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
