@@ -82,6 +82,9 @@ class ZkChannel(sp.Contract):
         # An enforced delay period that must have elapsed between calling custClose and 
         # custClaim, and between calling expiry and merchClaim.
         self.self_delay         = self_delay
+        # context_string is contained in the tuple that gets signed when creating the mutual 
+        # close signature.
+        self.context_string     = sp.string("zkChannels mutual close")
         self.init(
             # the unique identifier for the channel.
             cid                 = cid,
@@ -112,10 +115,7 @@ class ZkChannel(sp.Contract):
             # the merchDispute entrypoint.
             revocation_lock      = sp.bytes("0x00"),
             # if the delay is triggered, delay_expiry records when the delay is due to expire.
-            delay_expiry         = sp.timestamp(0),
-            # context_string is contained in the tuple that gets signed when creating the mutual 
-            # close signature.
-            context_string       = sp.string("zkChannels mutual close"))
+            delay_expiry         = sp.timestamp(0))
 
     # addCustFunding is called by the customer to fund their portion of the channel (according to
     # the amount specified by custFunding). The full amount must be funded in one transaction. The
@@ -322,7 +322,7 @@ class ZkChannel(sp.Contract):
                                      merchSig,
                                      sp.pack(sp.record(
                                              contract_id = sp.self_address,
-                                             context_string = self.data.context_string,
+                                             context_string = self.context_string,
                                              cid = self.data.cid,
                                              customer_balance = customer_balance,
                                              merchant_balance = merchant_balance)
