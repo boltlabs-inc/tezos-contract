@@ -507,7 +507,7 @@ def test():
         ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid cust balance")
-    # custhBal sp.tez(5) instead of sp.tez(4)
+    # set customer_balance to sp.tez(5) instead of sp.tez(4)
     scenario += failCust.custClose(
         revocation_lock = sp.bytes(REV_LOCK_FR), 
         customer_balance = sp.tez(5), 
@@ -517,7 +517,7 @@ def test():
         ).run(sender = aliceCust, valid = False)
 
     scenario.h3("Invalid merch balance")
-    # merchant_balance sp.tez(0) instead of sp.tez(1)
+    # set merchant_balance to sp.tez(0) instead of sp.tez(1)
     scenario += failCust.custClose(
         revocation_lock = sp.bytes(REV_LOCK_FR), 
         customer_balance = customer_balance, 
@@ -526,29 +526,79 @@ def test():
         sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature length")
-    # Invalid closing signature length (95 bytes instead of 96 bytes)
-    INVALID_SIGMA_1 = "0x14f1b85366034d689d6f5399487c5129975b65aeda6bfe18560f7bf68596e631fe518fca24248c0bdd0a75fe95989df810d1d5bc02844e1e291c6de13c8879b21fffeb9229e2fa829bf442877f252af3e0fb075cbb0ebb112957a1315af49a"
-    INVALID_SIGMA_2 = "0x0b23bd020d2e3fa293c6303493cf78f29ea908d4df930ed46910430eadc0445d33ab1f65e9ea1b74cc1be829d02c24bb0f3c3792bd177647782fd2595b376be322c0479839c56debaaa4b756c01e87f43814ecf9216302f80f05ea24cc4a6d"
+    scenario.h3("Invalid closing signature - identity element as sigma 1")
+    # set sigma1 to the identity element (IDENTITY_IN_G1)
     scenario += failCust.custClose(
         revocation_lock = sp.bytes(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(INVALID_SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(INVALID_SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
-        
-    scenario.h3("Invalid closing signature value")
-    INVALID_SIGMA_1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    INVALID_SIGMA_2 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(INVALID_SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(INVALID_SIGMA_2)
+        sigma1 = sp.bls12_381_g1(IDENTITY_IN_G1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
         ).run(sender = aliceCust, valid = False)
 
+    scenario.h3("Invalid closing signature length - short sigma 1")
+    # short_sigma_1 has a length of 95 bytes instead of 96 bytes
+    short_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7"
+    scenario += failCust.custClose(
+        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        customer_balance = customer_balance, 
+        merchant_balance = merchant_balance, 
+        sigma1 = sp.bls12_381_g1(short_sigma_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid closing signature length - long sigma 1")
+    # long_sigma_1 has a length of 97 bytes instead of 96 bytes
+    long_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cfaa"
+    scenario += failCust.custClose(
+        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        customer_balance = customer_balance, 
+        merchant_balance = merchant_balance, 
+        sigma1 = sp.bls12_381_g1(long_sigma_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid closing signature length - short sigma 2")
+    # short_sigma_2 has a length of 95 bytes instead of 96 bytes
+    short_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e6"
+    scenario += failCust.custClose(
+        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        customer_balance = customer_balance, 
+        merchant_balance = merchant_balance, 
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(short_sigma_2)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid closing signature length - long sigma 2")
+    # long_sigma_2 has a length of 97 bytes instead of 96 bytes
+    long_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630aa"
+    scenario += failCust.custClose(
+        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        customer_balance = customer_balance, 
+        merchant_balance = merchant_balance, 
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(long_sigma_2)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid closing signature value - invalid sigma 1")
+    invalid_sigma_1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    scenario += failCust.custClose(
+        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        customer_balance = customer_balance, 
+        merchant_balance = merchant_balance, 
+        sigma1 = sp.bls12_381_g1(invalid_sigma_1), 
+        sigma2 = sp.bls12_381_g1(SIGMA_2)
+        ).run(sender = aliceCust, valid = False)
+
+    scenario.h3("Invalid closing signature value - invalid sigma 2")
+    invalid_sigma_2 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    scenario += failCust.custClose(
+        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        customer_balance = customer_balance, 
+        merchant_balance = merchant_balance, 
+        sigma1 = sp.bls12_381_g1(SIGMA_1), 
+        sigma2 = sp.bls12_381_g1(invalid_sigma_2)
+        ).run(sender = aliceCust, valid = False)
 
     scenario.h2("Scenario 8: Failing tests for mutualClose")
     scenario.h3("escrow")
