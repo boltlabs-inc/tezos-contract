@@ -68,6 +68,17 @@ class ZkChannel(sp.Contract):
     # __init__ initializes the contract's storage at the time of origination. All the arguments 
     # must be provided in the origination operation. 
     def __init__(self, cid: sp.TBls12_381_fr, customer_address: sp.TAddress, merchant_address: sp.TAddress, customer_public_key: sp.TKey, merchant_public_key: sp.TKey, custFunding: sp.TMutez, merchFunding: sp.TMutez, self_delay: sp.TInt, g2: sp.TBls12_381_g2, y2s_0: sp.TBls12_381_g2, y2s_1: sp.TBls12_381_g2, y2s_2: sp.TBls12_381_g2, y2s_3: sp.TBls12_381_g2, y2s_4: sp.TBls12_381_g2, x2: sp.TBls12_381_g2, close_scalar: sp.TBls12_381_fr):
+        # Optimize the merchant Pointcheval Sanders pubkey into the global storage
+        self.g2                 = g2                # Pointcheval Sanders pubkey
+        self.y2s_0              = y2s_0             # Pointcheval Sanders pubkey
+        self.y2s_1              = y2s_1             # Pointcheval Sanders pubkey
+        self.y2s_2              = y2s_2             # Pointcheval Sanders pubkey
+        self.y2s_3              = y2s_3             # Pointcheval Sanders pubkey
+        self.y2s_4              = y2s_4             # Pointcheval Sanders pubkey
+        self.x2                 = x2                # Pointcheval Sanders pubkey
+        # A fixed scalar included in the message of Pointcheval Sanders closing signature when 
+        # calling custClose.
+        self.close_scalar       = close_scalar
         self.init(
             # the unique identifier for the channel.
             cid                 = cid,
@@ -102,16 +113,6 @@ class ZkChannel(sp.Contract):
             self_delay           = self_delay,
             # if the delay is triggered, delay_expiry records when the delay is due to expire.
             delay_expiry         = sp.timestamp(0),
-            g2                   = g2,                # Pointcheval Sanders pubkey
-            y2s_0                = y2s_0,             # Pointcheval Sanders pubkey
-            y2s_1                = y2s_1,             # Pointcheval Sanders pubkey
-            y2s_2                = y2s_2,             # Pointcheval Sanders pubkey
-            y2s_3                = y2s_3,             # Pointcheval Sanders pubkey
-            y2s_4                = y2s_4,             # Pointcheval Sanders pubkey
-            x2                   = x2,                # Pointcheval Sanders pubkey
-            # A fixed scalar included in the message of Pointcheval Sanders closing signature when 
-            # calling custClose.
-            close_scalar         = close_scalar,
             # context_string is contained in the tuple that gets signed when creating the mutual 
             # close signature.
             context_string       = sp.string("zkChannels mutual close"))
@@ -217,15 +218,7 @@ class ZkChannel(sp.Contract):
         # Fail if sigma1 is set to the identity element.
         sp.verify(self.is_g1_identity(sigma1)==False)
         # Prepare pairing check inputs
-        g2 = self.data.g2
-        y2s0 = self.data.y2s_0
-        y2s1 = self.data.y2s_1
-        y2s2 = self.data.y2s_2
-        y2s3 = self.data.y2s_3
-        y2s4 = self.data.y2s_4
-        x2 = self.data.x2
         cid = self.data.cid
-        close_b = self.data.close_scalar
 
         # Convert customer balance from mutez -> BLS12_381_fr (the scalar field of BLS12-381)
         # Mutez are encoded as 64-bit signed integers, so input must be smaller than the order of BLS12-381_fr
@@ -252,15 +245,15 @@ class ZkChannel(sp.Contract):
         rev_lock_b = sp.local('rev_lock_b', sp.unpack(rev_lock_packed.value, t = sp.TBls12_381_fr).open_some())
 
         # Verify Pointcheval Sanders signature against the message
-        pk = [y2s0, y2s1, y2s2, y2s3, y2s4]
+        pk = [self.y2s_0, self.y2s_1, self.y2s_2, self.y2s_3, self.y2s_4]
         # the message is composed of the channel ID, close flag, revocation lock, cust closing balance and 
         # merchant closing balance.
-        msg = [cid, close_b, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value]
-        prod1 = sp.local('prod1', x2)
+        msg = [cid, self.close_scalar, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value]
+        prod1 = sp.local('prod1', self.x2)
         for i in range(0, len(msg)):
             prod1.value += sp.mul(pk[i], msg[i])
         # Compute the pairing check.
-        sp.verify(sp.pairing_check([sp.pair(sigma1, prod1.value), sp.pair(sigma2, -g2)]), message="pairing check failed")
+        sp.verify(sp.pairing_check([sp.pair(sigma1, prod1.value), sp.pair(sigma2, -self.g2)]), message="pairing check failed")
         ## End of Pointcheval Sanders signature verification
 
         # Update the closing balances in the contract storage.  
