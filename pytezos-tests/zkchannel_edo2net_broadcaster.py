@@ -140,8 +140,7 @@ def originate(cust_py, init_params, cust_deposit, merch_deposit):
     'close_scalar': close_scalar_bytes,
     'context_string': "zkChannels mutual close",
     'customer_address': cust_addr, 
-    'customer_balance':cust_deposit,  
-    'customer_public_key': cust_pubkey, 
+    'customer_balance':cust_deposit, 
     'delay_expiry': '1970-01-01T00:00:00Z', 
     'g2':g2,
     'merchant_address': merch_addr, 
@@ -386,8 +385,6 @@ if __name__ == "__main__":
         out = cust_py.reveal().autofill().sign().send()
     except:
         pass
-    # Record the customer's tezos public key
-    cust_pubkey = cust_py.key.public_key()
 
     # We do the same for the merchant's account as we did for the customer's account above.
     try:
