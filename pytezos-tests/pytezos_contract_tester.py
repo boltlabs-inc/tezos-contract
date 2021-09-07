@@ -1,3 +1,4 @@
+import argparse
 import json
 from pytezos import pytezos, ContractInterface
 from pprint import pprint
@@ -519,6 +520,19 @@ def test_reclaim():
         )["op_info"]
     feetracker.add_result('addMerchFunding', op_info) 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-n", "--network", type=str, required=True, help="either 'testnet' or the RPC node uri")
+parser.add_argument("-s", "--self_delay", type=int, default=1, help="the value for self_delay in seconds")
+parser.add_argument("-m", "--min_confirmations", type=int, default=1, help="the minimum number of required confirmations for an operation")
+args = parser.parse_args()
+
+if args.network == "testnet":
+    uri = "https://rpc.tzkt.io/edo2net/"
+else:
+    uri = args.network
+min_confirmations = args.min_confirmations
+self_delay = args.self_delay
+
 # Define paths for all the files that will be used in the tests.
 establish_file = "sample_files/out.5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67.establish.json"
 close_file = "sample_files/out.5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67.close.json"
@@ -559,16 +573,10 @@ zkchannel_contract = "../zkchannels-contract/zkchannel_contract.tz"
 main_code = ContractInterface.from_file(zkchannel_contract)
 
 # Query the blockchain to get the merchant's and customer's public keys
-uri = "https://rpc.tzkt.io/edo2net/"
 merch_py = pytezos.using(key=merch_acc, shell=uri)
 merch_pubkey = merch_py.key.public_key()
 cust_py = pytezos.using(key=cust_acc, shell=uri)
 cust_pubkey = cust_py.key.public_key()
-
-# Only require 1 confirmation speed up tests.
-min_confirmations = 1
-# Use a short self_delay so we can test the 'claim' paths without waiting.
-self_delay = 1 
 
 # Initialize the feetracker, used to record gas and storage costs of operations.
 feetracker = FeeTracker()

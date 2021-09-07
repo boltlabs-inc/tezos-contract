@@ -22,7 +22,7 @@ We'll need to download [PyTezos](https://github.com/baking-bad/pytezos) to inter
     pip3 install -r requirements.txt
 ```
 
-From the pytezos-tests directory run the `pytezos_contract_tester.py`. 
+From the pytezos-tests directory run the `pytezos_contract_tester.py` specifying `--network` , which can be either `"testnet"` or the node RPC uri, e.g.
 ```
-    $ python3 pytezos_contract_tester.py
+    $ python3 pytezos_contract_tester.py --network=testnet
 ```
