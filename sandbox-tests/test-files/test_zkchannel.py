@@ -6,35 +6,33 @@ import sys, json
 BAKE_ARGS = ['--minimal-timestamp']
 CONTEXT_STRING = "zkChannels mutual close"
 
-def form_initial_storage(cid, customer_address, customer_public_key, merchant_address, merchant_public_key, cust_funding_mt, merch_funding, rev_lock, self_delay, merch_ps_pk, close_scalar):
+def form_initial_storage(cid, customer_address, merchant_address, merchant_public_key, cust_funding_mt, merch_funding, rev_lock, self_delay, merch_ps_pk, close_scalar):
     g2 = merch_ps_pk.get("g2")
     y2s = merch_ps_pk.get("y2s")
     x2 = merch_ps_pk.get("x2")
     status = 0
     delay_expiry = 0
 
-    return '(Pair (Pair (Pair (Pair {cid} {close_scalar}) (Pair \"{context_string}\" (Pair \"{customer_address}\" {customer_balance}))) (Pair (Pair \"{customer_public_key}\" \"{delay_expiry}\") (Pair {g2} (Pair \"{merchant_address}\" {merchant_balance})))) (Pair (Pair (Pair \"{merchant_public_key}\" {rev_lock}) (Pair {self_delay} (Pair {status} {x2}))) (Pair (Pair {y2s_0} {y2s_1}) (Pair {y2s_2} (Pair {y2s_3} {y2s_4})))))'.format(
-        cid=cid, 
-        customer_address=customer_address, 
-        customer_public_key=customer_public_key, 
-        merchant_address=merchant_address, 
-        merchant_public_key=merchant_public_key, 
-        self_delay=self_delay, 
-        rev_lock=rev_lock, 
-        g2=g2, 
-        y2s_0=y2s[0], 
-        y2s_1=y2s[1], 
-        y2s_2=y2s[2], 
-        y2s_3=y2s[3], 
-        y2s_4=y2s[4], 
-        x2=x2, 
-        close_scalar=close_scalar, 
-        context_string=CONTEXT_STRING, 
-        customer_balance=int(cust_funding_mt), 
-        merchant_balance=int(merch_funding), 
-        status=status, 
-        delay_expiry=delay_expiry)
-
+    return '(pair (Pair (Pair (Pair {cid} {close_scalar}) (Pair \"{context_string}\" \"{customer_address}\")) (Pair (Pair {customer_balance} \"{delay_expiry}\") (Pair g2 (Pair \"{merchant_address}\" {merchant_balance})))) (Pair (Pair (Pair \"{merchant_public_key}\" {revocation_lock}) (Pair {self_delay} (Pair {status} {x2}))) (Pair (Pair {y2s_0} {y2s_1}) (Pair {y2s_2} (Pair {y2s_3} {y2s_4})))))'.format(
+            cid=cid, 
+            customer_address=customer_address, 
+            merchant_address=merchant_address, 
+            merchant_public_key=merchant_public_key, 
+            self_delay=self_delay, 
+            rev_lock=rev_lock, 
+            g2=g2, 
+            y2s_0=y2s[0], 
+            y2s_1=y2s[1], 
+            y2s_2=y2s[2], 
+            y2s_3=y2s[3], 
+            y2s_4=y2s[4], 
+            x2=x2, 
+            close_scalar=close_scalar, 
+            context_string=CONTEXT_STRING, 
+            customer_balance=int(cust_funding_mt), 
+            merchant_balance=int(merch_funding), 
+            status=status, 
+            delay_expiry=delay_expiry)
 
 def read_json_file(json_file):
     f = open(json_file)
@@ -56,7 +54,6 @@ def scenario_cust_close(contract_path, establish_json, cust_close_json):
         time.sleep(1) # sleep after baking to prevent the error of blocks being produced in the future
 
         customer_address = constants.IDENTITIES['bootstrap1']['identity']
-        customer_public_key = constants.IDENTITIES['bootstrap1']['public']
         merchant_address = constants.IDENTITIES['bootstrap2']['identity']
         merchant_public_key = constants.IDENTITIES['bootstrap2']['public']
 
@@ -80,7 +77,7 @@ def scenario_cust_close(contract_path, establish_json, cust_close_json):
         self_delay = 3
 
         # Originate zkchannel contract (without funding)
-        initial_storage = form_initial_storage(cid, customer_address, customer_public_key, merchant_address, merchant_public_key, cust_funding_mt, merch_funding, rev_lock0, self_delay, merch_ps_pk, close_scalar_bytes)
+        initial_storage = form_initial_storage(cid, customer_address, merchant_address, merchant_public_key, cust_funding_mt, merch_funding, rev_lock0, self_delay, merch_ps_pk, close_scalar_bytes)
         args = ["--init", initial_storage, "--burn-cap", burncap]
         sandbox.client(0).originate(contract_name, 0, "bootstrap1", contract, args)
         
@@ -195,7 +192,6 @@ def scenario_mutual_close(contract_path, pubkey):
         time.sleep(1) # sleep after baking to prevent the error of blocks being produced in the future
 
         customer_address = constants.IDENTITIES['bootstrap1']['identity']
-        customer_public_key = constants.IDENTITIES['bootstrap1']['public']
         merchant_address = constants.IDENTITIES['bootstrap2']['identity']
         merchant_public_key = constants.IDENTITIES['bootstrap2']['public']
 
@@ -219,7 +215,7 @@ def scenario_mutual_close(contract_path, pubkey):
         self_delay = 3
 
         # Originate zkchannel contract (without funding)
-        initial_storage = form_initial_storage(cid, customer_address, customer_public_key, merchant_address, merchant_public_key, cust_funding_mt, merch_funding, rev_lock0, self_delay, merch_ps_pk, close_scalar_bytes)
+        initial_storage = form_initial_storage(cid, customer_address, merchant_address, merchant_public_key, cust_funding_mt, merch_funding, rev_lock0, self_delay, merch_ps_pk, close_scalar_bytes)
         args = ["--init", initial_storage, "--burn-cap", burncap]
         sandbox.client(0).originate(contract_name, 0, "bootstrap1", contract, args)
         
