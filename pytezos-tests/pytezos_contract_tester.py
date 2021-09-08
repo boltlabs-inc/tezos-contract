@@ -1,3 +1,19 @@
+''' Pytezos contract tester
+
+The first part of this script contains functions for calling each of the 
+zkchannels contract entrypoints. The functions are written in a way that
+matches how they will be used in zeekoe.
+
+The second part of the script tests the functions against either a testnet
+or sandbox node. The tests ensure that the origination operation and 
+entrypoint calls are made successfully, and that the contract behaves as
+expected.
+
+To run the tests the --network argument must be provided with either 
+'testnet' to connect to a public testnet node, or the uri of the tezos node
+RPC.
+'''
+
 import argparse
 import json
 from pytezos import pytezos, ContractInterface
