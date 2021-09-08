@@ -374,6 +374,9 @@ def test():
     y2s_4 = sp.bls12_381_g2(Y2S_4_G2)
     x2 = sp.bls12_381_g2(X2_G2)
 
+    # add_compilation_target allows us to compile the contract using the smartpy-cli
+    sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar))
+
     # Correct closing balances for the sample signature
     customer_balance = sp.tez(4)
     merchant_balance = sp.tez(1)
