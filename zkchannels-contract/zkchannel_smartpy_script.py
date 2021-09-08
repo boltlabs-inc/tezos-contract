@@ -206,7 +206,7 @@ class ZkChannel(sp.Contract):
     # closing balances (customer_balance, merchant_balance), the revocation lock (revocation_lock), and the 
     # Pointcheval Sanders closing signature (sigma1, sigma2).
     @sp.entry_point
-    def custClose(self, customer_balance: sp.TMutez, merchant_balance: sp.TMutez, revocation_lock: sp.TBytes, sigma1: sp.TBls12_381_g1, sigma2: sp.TBls12_381_g1, g2: sp.TBls12_381_g2, y2s_0: sp.TBls12_381_g2, y2s_1: sp.TBls12_381_g2, y2s_2: sp.TBls12_381_g2, y2s_3: sp.TBls12_381_g2, y2s_4: sp.TBls12_381_g2, x2: sp.TBls12_381_g2):
+    def custClose(self, customer_balance: sp.TMutez, merchant_balance: sp.TMutez, revocation_lock: sp.TBytes, sigma1: sp.TBls12_381_g1, sigma2: sp.TBls12_381_g1, g2: sp.TBytes, y2s_0: sp.TBytes, y2s_1: sp.TBytes, y2s_2: sp.TBytes, y2s_3: sp.TBytes, y2s_4: sp.TBytes, x2: sp.TBytes):
         # Only allow the customer to call the entrypoint.
         sp.verify(self.data.customer_address == sp.sender)
         # Verify that the contract status is either OPEN or EXPIRY.
