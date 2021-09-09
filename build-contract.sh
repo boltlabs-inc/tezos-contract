@@ -92,8 +92,8 @@ else
 fi
 
 set -x
-# install the smartPy CLI (if not currently present)
-sh <(curl -s https://smartpy.io/cli/install.sh)
+# install the smartPy CLI v0.7.4 (if not currently present)
+sh <(curl -s https://smartpy.io/releases/20210904-98c3fb1314a5298a5000fe3801d0b57238469670/cli/install.sh)
 # create the output dir
 mkdir -p $OUTPUT_DIR/
 # first let's test the script to ensure no build errors as a sanity check
