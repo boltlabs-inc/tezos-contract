@@ -64,6 +64,15 @@ function distro() {
   fi
 }
 
+function brew_install() {
+    console "Installing $1"
+    if brew list $1 &>/dev/null; then
+        echo "${1} is already installed"
+    else
+        brew install $1 && echo "$1 is installed"
+    fi
+}
+
 OUTPUT_DIR=tmp-contract
 CONTRACT_TARGET_DIR=${1:-.}
 SMARTPY_CONTRACT=zkchannels-contract/zkchannel_smartpy_script.py
@@ -74,9 +83,11 @@ if [ ! -d "$CONTRACT_TARGET_DIR" ]; then
 fi
 # get the full path to contract target dir
 CONTRACT_TARGET_DIR=$(realpath -s $CONTRACT_TARGET_DIR)
+echo $CONTRACT_TARGET_DIR
 
 if [[ "$(uname)" = "Darwin" ]]; then
     console "Compiling on MacOS ($(uname))"
+    brew_install coreutils
 else
   platform OS
   distro $OS OS_VERSION
@@ -101,7 +112,7 @@ $HOME/smartpy-cli/SmartPy.sh test $SMARTPY_CONTRACT $OUTPUT_DIR/
 # then proceed to compile the smartPy script in the target output directory
 $HOME/smartpy-cli/SmartPy.sh compile $SMARTPY_CONTRACT $OUTPUT_DIR/
 # identify the contract using the latest HEAD 
-cp $OUTPUT_DIR/compiled_contract/*_contract.tz $CONTRACT_TARGET_DIR/zkchannel_contract_${COMMIT_HASH}.tz
+cp ${OUTPUT_DIR}/compiled_contract/*_contract.tz ${CONTRACT_TARGET_DIR}/zkchannel_contract_${COMMIT_HASH}.tz
 # clean up 
 rm -rf $OUTPUT_DIR
 set +x
