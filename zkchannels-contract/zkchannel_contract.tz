@@ -226,7 +226,7 @@ code
                 CONTRACT unit; # option (contract unit) : @storage
                 IF_NONE
                   {
-                    PUSH int 304; # int : @storage
+                    PUSH int 305; # int : @storage
                     FAILWITH;   # FAILED
                   }
                   {}; # @some : @storage
@@ -321,7 +321,7 @@ code
                 EDIV;       # option (pair nat mutez) : @parameter%custClose : @storage
                 IF_NONE
                   {
-                    PUSH int 226; # int : @parameter%custClose : @storage
+                    PUSH int 232; # int : @parameter%custClose : @storage
                     FAILWITH;   # FAILED
                   }
                   {}; # @some : @parameter%custClose : @storage
@@ -338,7 +338,7 @@ code
                 EDIV;       # option (pair nat mutez) : bls12_381_fr : @parameter%custClose : @storage
                 IF_NONE
                   {
-                    PUSH int 235; # int : bls12_381_fr : @parameter%custClose : @storage
+                    PUSH int 241; # int : bls12_381_fr : @parameter%custClose : @storage
                     FAILWITH;   # FAILED
                   }
                   {}; # @some : bls12_381_fr : @parameter%custClose : @storage
@@ -356,7 +356,7 @@ code
                 UNPACK bls12_381_fr; # option bls12_381_fr : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
                 IF_NONE
                   {
-                    PUSH int 245; # int : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
+                    PUSH int 251; # int : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
                     FAILWITH;   # FAILED
                   }
                   {}; # @some : bls12_381_fr : bls12_381_fr : @parameter%custClose : @storage
@@ -491,7 +491,7 @@ code
                     CONTRACT unit; # option (contract unit) : list operation : @parameter%custClose : pair (pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez timestamp)) (pair (pair (bls12_381_g2 %g2) (address %merchant_address)) (pair (mutez %merchant_balance) (key %merchant_public_key)))) (pair (pair (pair bytes int) (pair (nat %status) (bls12_381_g2 %x2))) (pair (pair (bls12_381_g2 %y2s_0) (bls12_381_g2 %y2s_1)) (pair (bls12_381_g2 %y2s_2) (pair (bls12_381_g2 %y2s_3) (bls12_381_g2 %y2s_4)))))
                     IF_NONE
                       {
-                        PUSH int 268; # int : list operation : @parameter%custClose : pair (pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez timestamp)) (pair (pair (bls12_381_g2 %g2) (address %merchant_address)) (pair (mutez %merchant_balance) (key %merchant_public_key)))) (pair (pair (pair bytes int) (pair (nat %status) (bls12_381_g2 %x2))) (pair (pair (bls12_381_g2 %y2s_0) (bls12_381_g2 %y2s_1)) (pair (bls12_381_g2 %y2s_2) (pair (bls12_381_g2 %y2s_3) (bls12_381_g2 %y2s_4)))))
+                        PUSH int 274; # int : list operation : @parameter%custClose : pair (pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez timestamp)) (pair (pair (bls12_381_g2 %g2) (address %merchant_address)) (pair (mutez %merchant_balance) (key %merchant_public_key)))) (pair (pair (pair bytes int) (pair (nat %status) (bls12_381_g2 %x2))) (pair (pair (bls12_381_g2 %y2s_0) (bls12_381_g2 %y2s_1)) (pair (bls12_381_g2 %y2s_2) (pair (bls12_381_g2 %y2s_3) (bls12_381_g2 %y2s_4)))))
                         FAILWITH;   # FAILED
                       }
                       {}; # @some : list operation : @parameter%custClose : pair (pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair mutez timestamp)) (pair (pair (bls12_381_g2 %g2) (address %merchant_address)) (pair (mutez %merchant_balance) (key %merchant_public_key)))) (pair (pair (pair bytes int) (pair (nat %status) (bls12_381_g2 %x2))) (pair (pair (bls12_381_g2 %y2s_0) (bls12_381_g2 %y2s_1)) (pair (bls12_381_g2 %y2s_2) (pair (bls12_381_g2 %y2s_3) (bls12_381_g2 %y2s_4)))))
@@ -648,7 +648,7 @@ code
                 CONTRACT unit; # option (contract unit) : @storage
                 IF_NONE
                   {
-                    PUSH int 191; # int : @storage
+                    PUSH int 197; # int : @storage
                     FAILWITH;   # FAILED
                   }
                   {}; # @some : @storage
@@ -689,80 +689,50 @@ code
           {
             IF_LEFT
               {
+                DIG 2;      # lambda bls12_381_g1 bool : @parameter%merchDispute : @storage
+                DROP;       # @parameter%merchDispute : @storage
                 # == merchDispute ==
-                # sp.verify(self.data.merchant_address == sp.sender) # @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                SENDER;     # @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                DUP 3;      # @storage : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                CAR;        # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (timestamp %delay_expiry))) (pair (pair (bls12_381_g2 %g2) (address %merchant_address)) (pair (mutez %merchant_balance) (key %merchant_public_key))) : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                GET 3;      # pair (bls12_381_g2 %g2) (address %merchant_address) : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                CDR;        # address : @sender : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                COMPARE;    # int : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                EQ;         # bool : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
+                # sp.verify(self.data.merchant_address == sp.sender) # @parameter%merchDispute : @storage
+                SENDER;     # @sender : @parameter%merchDispute : @storage
+                DUP 3;      # @storage : @sender : @parameter%merchDispute : @storage
+                CAR;        # pair (pair (pair (bls12_381_fr %cid) (address %customer_address)) (pair (mutez %customer_balance) (timestamp %delay_expiry))) (pair (pair (bls12_381_g2 %g2) (address %merchant_address)) (pair (mutez %merchant_balance) (key %merchant_public_key))) : @sender : @parameter%merchDispute : @storage
+                GET 3;      # pair (bls12_381_g2 %g2) (address %merchant_address) : @sender : @parameter%merchDispute : @storage
+                CDR;        # address : @sender : @parameter%merchDispute : @storage
+                COMPARE;    # int : @parameter%merchDispute : @storage
+                EQ;         # bool : @parameter%merchDispute : @storage
                 IF
                   {}
                   {
-                    PUSH string "WrongCondition: self.data.merchant_address == sp.sender"; # string : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
+                    PUSH string "WrongCondition: self.data.merchant_address == sp.sender"; # string : @parameter%merchDispute : @storage
                     FAILWITH;   # FAILED
-                  }; # @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                # sp.verify(self.data.status == 4) # @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                PUSH nat 4; # nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                DUP 3;      # @storage : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                GET 3;      # pair (pair (bytes %revocation_lock) (int %self_delay)) (pair (nat %status) (bls12_381_g2 %x2)) : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                GET 3;      # nat : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                COMPARE;    # int : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                EQ;         # bool : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
+                  }; # @parameter%merchDispute : @storage
+                # sp.verify(self.data.status == 4) # @parameter%merchDispute : @storage
+                PUSH nat 4; # nat : @parameter%merchDispute : @storage
+                DUP 3;      # @storage : nat : @parameter%merchDispute : @storage
+                GET 3;      # pair (pair (bytes %revocation_lock) (int %self_delay)) (pair (nat %status) (bls12_381_g2 %x2)) : nat : @parameter%merchDispute : @storage
+                GET 3;      # nat : nat : @parameter%merchDispute : @storage
+                COMPARE;    # int : @parameter%merchDispute : @storage
+                EQ;         # bool : @parameter%merchDispute : @storage
                 IF
                   {}
                   {
-                    PUSH string "WrongCondition: self.data.status == 4"; # string : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
+                    PUSH string "WrongCondition: self.data.status == 4"; # string : @parameter%merchDispute : @storage
                     FAILWITH;   # FAILED
-                  }; # @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                # revocation_lock_be = sp.local("revocation_lock_be", sp.list([])) # @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                NIL bytes;  # list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                # for i in sp.range(0, 32): ... (sp.TNat) # list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                PUSH nat 0; # nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                PUSH bool True; # bool : nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                LOOP
-                  {
-                    SWAP;       # list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    # revocation_lock_be.value.push(sp.slice(self.data.revocation_lock, i, 1).open_some()) # list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    DUP 4;      # @storage : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    GET 3;      # pair (pair (bytes %revocation_lock) (int %self_delay)) (pair (nat %status) (bls12_381_g2 %x2)) : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    CAR;        # pair (bytes %revocation_lock) (int %self_delay) : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    CAR;        # bytes : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    PUSH nat 1; # nat : bytes : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    DUP 4;      # nat : nat : bytes : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    SLICE;      # option bytes : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    IF_NONE
-                      {
-                        PUSH int 285; # int : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                        FAILWITH;   # FAILED
-                      }
-                      {}; # @some : list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    CONS;       # list bytes : nat : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    SWAP;       # nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    # loop step # nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    PUSH nat 1; # nat : nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    ADD;        # nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    DUP;        # nat : nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    PUSH nat 32; # nat : nat : nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    COMPARE;    # int : nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                    GT;         # bool : nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                  }; # nat : list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                DROP;       # list bytes : @parameter%merchDispute : @storage : lambda bls12_381_g1 bool
-                DIG 3;      # lambda bls12_381_g1 bool : list bytes : @parameter%merchDispute : @storage
-                DROP;       # list bytes : @parameter%merchDispute : @storage
-                SWAP;       # @parameter%merchDispute : list bytes : @storage
-                # sp.verify(sp.concat(revocation_lock_be.value) == sp.sha3(params)) # @parameter%merchDispute : list bytes : @storage
-                SHA3;       # bytes : list bytes : @storage
-                SWAP;       # list bytes : bytes : @storage
-                CONCAT;     # bytes : bytes : @storage
+                  }; # @parameter%merchDispute : @storage
+                # sp.verify(self.data.revocation_lock == sp.sha3(params)) # @parameter%merchDispute : @storage
+                SHA3;       # bytes : @storage
+                SWAP;       # @storage : bytes
+                DUP;        # @storage : @storage : bytes
+                DUG 2;      # @storage : bytes : @storage
+                GET 3;      # pair (pair (bytes %revocation_lock) (int %self_delay)) (pair (nat %status) (bls12_381_g2 %x2)) : bytes : @storage
+                CAR;        # pair (bytes %revocation_lock) (int %self_delay) : bytes : @storage
+                CAR;        # bytes : bytes : @storage
                 COMPARE;    # int : @storage
                 EQ;         # bool : @storage
                 IF
                   {}
                   {
-                    PUSH string "WrongCondition: sp.concat(revocation_lock_be.value) == sp.sha3(params)"; # string : @storage
+                    PUSH string "WrongCondition: self.data.revocation_lock == sp.sha3(params)"; # string : @storage
                     FAILWITH;   # FAILED
                   }; # @storage
                 # sp.send(self.data.merchant_address, self.data.customer_balance) # @storage
@@ -773,7 +743,7 @@ code
                 CONTRACT unit; # option (contract unit) : @storage
                 IF_NONE
                   {
-                    PUSH int 289; # int : @storage
+                    PUSH int 290; # int : @storage
                     FAILWITH;   # FAILED
                   }
                   {}; # @some : @storage
@@ -886,7 +856,7 @@ code
                         CONTRACT unit; # option (contract unit) : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                         IF_NONE
                           {
-                            PUSH int 334; # int : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
+                            PUSH int 335; # int : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
                             FAILWITH;   # FAILED
                           }
                           {}; # @some : list operation : @parameter%mutualClose : @storage : lambda bls12_381_g1 bool
@@ -917,7 +887,7 @@ code
                         CONTRACT unit; # option (contract unit) : list operation : @parameter%mutualClose : @storage
                         IF_NONE
                           {
-                            PUSH int 336; # int : list operation : @parameter%mutualClose : @storage
+                            PUSH int 337; # int : list operation : @parameter%mutualClose : @storage
                             FAILWITH;   # FAILED
                           }
                           {}; # @some : list operation : @parameter%mutualClose : @storage
@@ -992,7 +962,7 @@ code
                     CONTRACT unit; # option (contract unit) : @storage
                     IF_NONE
                       {
-                        PUSH int 158; # int : @storage
+                        PUSH int 164; # int : @storage
                         FAILWITH;   # FAILED
                       }
                       {}; # @some : @storage

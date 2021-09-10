@@ -6,19 +6,25 @@ import smartpy as sp
 # generate sample inputs for scenario tests after successfully establishing the channel,
 # make at least one payment and then proceed to close the channel as follows (in off chain mode):
 # $ ./target/debug/zkchannel customer --config "./dev/Customer.toml" close --force my-zkchannel --off-chain
-CID_FR = "0x5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67"
-REV_LOCK_FR = "0x7723ecf912ca83f8c637e7341699dad476ba971506cbf5f6bdaaac313b761c2f"
-SIGMA_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cf"
-SIGMA_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630"
-PUB_GEN_G2 = "0x0b9ea946e3fa314fdf01e7f6077b383eb113cb0c6b9c45bdd76579ca6ffcd875828453fe119df06dd96222899e16b70e0597d482200131de43ed4185e8b816339acf1cf17432ef8c9b0ee6bee7ce7f4b90d0e223b463b7b036072ac350984a7d18a06ae675abb45a6fc99a015a6449407d514c13c237a69177a3c467198ffbad00c342fc747c5a02b7c1004aa40518910c0e5dcc467d1effb9f7a6a9b7c13034e1de1509f07be3084f6d83711c614dd8ea5cf875c37c58d8f1e69c1df3fb9fc6"
-Y2S_0_G2 = "0x1249832415369e4a3043e21040b95583b7a868b9e73ff520884dd622b694defdfefe31ef0c11ec0956f2ac25b75f4ae00758ec3afe7d5160b2e9310954e5565e83b632d7075429dbd08ad795da021b2d175e49a6e4a402a387933fe5fd6c74b80c097ece2ae44bfe10347cf753165cfe80aea3823f7d140671afad20b620cc089f29f9c4095a8a9cf412290dfef1f8811399067199e2b871477921c38bd7ca53bbb8a89747c51f56ad35ce9f45c1a890417b77076673a683e23a98e23464598f"
-Y2S_1_G2 = "0x0df5839732a5c6ecc2dac945897afbb775788042b6dade7181f29da2255a7c406f9e990ddf98f81f93c3caa5ec1fd1d40a43d9a34e76ce76b3ae48952ab83996025209ae2d5ad77dcb4b580390b4917fbefd5d9376d8de4ef872bfe5503327ac171a1cddbdfe6ab91794981172bab8c62dcac137c5a5824351d7f35d2b84f03c15ebe48d129ac0fb2dc34fbb230632fd0f8eb2bd39a6e8da0c5fb91aebb61ce522e460d7fd9995832c0f8be09ff44cb4df07d0aa9008207514442814018f61fb"
-Y2S_2_G2 = "0x02048d8c4b04b83603d7078cda46549325aeb60b9b387a3b0bc8d84d49b5f210ca7dae080c7b5a3e2fb71c6938d5090710822f026a1367ba49f366f8b8605f9c008ed306a0a4b06c00816fb936299249871d77e91c89825e5d70b6e37c4d2e7f04b7abcb4aa2f095e8568b4d0ea9251e93f28bb6d98c058cd47194de7fb33a1c04e2bfe158c3e4dc34f1bf5f4125066b160d63ef314554cca42c22a3f5f57a9f54d8d8557a43661d322dc416985f3558c992b08c378e04a04e4f4043ebd25f38"
-Y2S_3_G2 = "0x03f479529090932a017d95deee54d66048b1c99e286193734db8dc610bc85f62fcf761a61e289da376eddfc8eeb133721985f59205455baf92251ce5d922e27eff8391541d76b836e049041ea3eb394883348bad13053e8181e95be33c0c01500c6775a22a190985223d6ae7ebfdb0ac1ae87fc73d43a1a758086228d6c00f4a5679d497298544ac28ef4c012bba3b8b00f0d3e856f83a98a287e8eacfa516cc49608e99059f9960cc0ef1f9300938170df759157c8eb5f3cda6fd235d057a53"
-Y2S_4_G2 = "0x1071998a1831f568d448c178b1c4d5f90a2c8191a027181957e87735eb7ec6c1b1b6f6245a2cff2d20e19a8b8719d91f05c265f2919fcc701c465462c423e05573442fb2b15eddd921bb77fa1ec29fc54ae24e672eb302ee695bd4726f629a4c0d42acb2a3f744a69cdd32733d6d467357a1d481088147cd086bfc33f391bb68c6a13c831d8deca8e36da604c63c08870c14be3600b29a3844ca2758a33172329ffa38284f99e96791fac534605c109cfe51752bcb8c143d6f86c2aa91a2a9aa"
-X2_G2 = "0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e62750d699bd13647089278a1e6cc490986f181529059281216c836f054f392efb90b4890a57e46f43f7dc5a8faf0fe41a1b2cd54402dd0af86b78c3a8e175daf9530a2d9d970935dc3e93463565b431d38e13456092bce8da73ed1c2274a02dd29e1e3e0dda7a6f1e0f6c67ab741b4cc20212dcab1cad18c655264f6f56a9ad1a383be2cd0c72d2fdb59ffea76cb1c9d57f84a0d82ea391579bb5e11bc61e40d136"
+CID_FR = "0xaa5f4b9d089e328bb1fcfe32300e45ec670331135dae73467a8813182534ae8b"
+REV_LOCK_FR = "0x2fcdfd6ebb722754ee423603d11f8a380d06ffd991bcf2d64f1bb2de4c079d59"
+SIGMA_1 = "0x10db5b493e43602f4083986369dbcd7974946d9244b74b30636b66a125ea08757fd04da5009dad70a894628b6b5bf69000fce48b1737a247d45908f7464a962ed9632e16b92ea4dfb8b045b9e019e4c61cfd12b1be33f5f0dc5f98856ec7b515"
+SIGMA_2 = "0x10b3d5f631c6fd8fed3f507a1907317de5d644c767c7e2e4d632402d3e3fabf2fea69fe35179d83ca8ce205224e5c7210201c0cfd1d3612aecfda8456c08f92121c0523b4670228de1b8fd11c7755e3644f7dc4a85e8dfaec808e0b7f53c465d"
+PUB_GEN_G2 = "0x1811b6c1b69de4f148bc1dd8f2b5066c79e85ef63af97711ba2d1b4cda9137a6ba58749c1fd28c8c9b4d08fdad949216117abce68370a1b86f7f6b77ffdd52cd96f3382d79f7cd43c25bb45f9d69781b2624d292c5318f0c3609b6c41ad57ea8040d188d060274b3bc7d9ed6f6addb159faca876a70c4c5d60ddb85abac084e4463848f14449b92f582211401dbec1830bc18ebecbf074b63736685ce39d238839710eae4705fe0633e98c36f9cfad515018aa6cf4838938921632255a43e95c"
+Y2S_0_G2 = "0x1786214a13b25ea5c597e9dc744e65012a98f48241e6d03406bd63789acfa7b88b383f5863d3ccf77e12cba598f85c2913e043aec93a41700ad9743e2fe3720cf14f1f9439bfcb0107c4d003af8fe197d91e3da6632b11e490b2e6dff334906f148e61ff4d818c44cf59b0dadb9a6fad18419a06e03c1c549dc9a8ad8874401661d1505f7b92cb3f659f3f22f60d12a506c58b494c0269f7b2d52e543cfa6cbf791c9e4913a04bd0889e94fbbc1b6758b48ea95bd3cc73734b46717bb09a78ed"
+Y2S_1_G2 = "0x123670d7d9ac450b092f09f0d6041b1b11340c2c0ddd1df6f2848a6fb3805966bab35dbe8027774afb34d8445cad05a1061c74b48c425d8c286772f35d1d0842aea727f9c8c6e89d6db7408039ae7cb607ec6252fdc97c202101e8314b4c25f103dcfcaedd2eb1b2cdeb467833b90256f075b65dd72215e1c122032768e8610d62868da74573ede8962c46488ca54ce0157ebdbffc3f3ca748cfd642355b5edef44430586ed87f61bde6579a2fab2df5769610314081ac8bb4f9f332d85b211c"
+Y2S_2_G2 = "0x157f98b360c2c36649b06a40968683257575c72375dcbdb7a9616fe57369d7cca37041083284c09acf6f749bc45970480357046ba3f721a48506af254edb01dcd6d756b59a5dd2101777203b77f87721c3701eca64d4e171fa5c6c31cc99103907a7503659719e10a95ba124dc562ae4d8a4e12c786bf2f8f6902b0427540249357b3c5c65343e4dbb82683892d6be0718f7ad957036cf1fb909ed670fd2abac55f18aa70b1cd2efcf5b3e8e59c26432dc2036566cc305c4a33a39bb0dcc8e69"
+Y2S_3_G2 = "0x17b5ccfa3c58f1a1f99c52ad71f97ffb7cf1bb1e89e7ee9b4d57b3681f38bbb782e17e282aee537a1868162259083ee811f172ed897d67e5e50dee85db8d5ba21244068199d4542e423a895c7483cd9663a85f62bf9883bf1759b7d6034f1c1819dff3aa1a78b551455a277051d705ad8dab10da4f4f6d182eb4841dde1e86c655772aa24b831db1e1769ff454040935016117eb5606ccb068ab70b854a802f9302731c1bca4a23edc1c608004eda465202519f3d1578de67716e6b5dec7b1f5"
+Y2S_4_G2 = "0x11bace6a644a879ef7a1ed0445028ea915a4644c85d14876114800d0e3db25e8008b1cd49622ca2b5d9b85754677f1250854f0fb98b7904703660131a62b46eea8baf079d15e2ee2f11d5172c5145b482c0d1b88cd6d59b8f117bd0be63b242c162eda5c99321eecb567951dbbe38880e478152e3f83f25d4d4c49fbe5789e717aded01312f3d6173dee48a03a62c7a0106c3e6d4cf4043e3033a44d923dec84001e82a0d6c47edc6c179078b9d9afff31ca60db0cf0ff29457913a093f659a4"
+X2_G2 = "0x06d5fc42249bcdb0b34b3ff14f225da782b98bb2d8e425ada8f98e49362534391d3b945594130e679425088df5b35f4c16a961f05445a3a222db91f988267851c13bff25519a9e3bee0f2e7affac0eaf04c3c0cb0490ddf4bd99412af2d227db038e5e5b64d9d11b6eb9cd969913353ded1f06dcf549bee6ab280673b598dd8fd673f3afec8ccf6a00994dc0e911fbff09e862287b9ffa330953421ab76453fffcbe5d100de99929f863631adcc985bba2c6cd8854598c5e997c98aaa93cb547"
 CLOSE_SCALAR = "0x000000000000000000000000000000000000000000000000000000434c4f5345"
 CONTEXT_STRING = "zkChannels mutual close"
+REV_SECRET = "0x089bd7223e599b9e9c9ec878a19144d44832db1c93ebf80f763365f9fec8ab0d"
+
+CUST_DEPOSIT_MUTEZ = 1000
+MERCH_DEPOSIT_MUTEZ = 0
+CUST_CLOSE_BALANCE_MUTEZ = 950
+MERCH_CLOSE_BALANCE_MUTEZ = 50
 
 # zkChannel contract statuses
 # AWAITING_CUST_FUNDING - The contract has been originated but not funded by either party. In this 
@@ -278,13 +284,8 @@ class ZkChannel(sp.Contract):
         sp.verify(self.data.merchant_address == sp.sender)
         # Verify that the contract status is CUST_CLOSE.
         sp.verify(self.data.status == CUST_CLOSE)
-        
-        # Convert rev_lock in storage from LE to BE
-        revocation_lock_be = sp.local('revocation_lock_be', sp.list([]))
-        sp.for i in sp.range(0, 32):
-            revocation_lock_be.value.push(sp.slice(self.data.revocation_lock, i, 1).open_some())
         # Verify the revocation secret hashes to the revocation lock
-        sp.verify(sp.concat(revocation_lock_be.value) == sp.sha3(revocation_secret))
+        sp.verify(self.data.revocation_lock == sp.sha3(revocation_secret))
         # Send the customer's (revoked) balance to the merchant
         sp.send(self.data.merchant_address, self.data.customer_balance)
         # Set the channel status to CLOSED.
@@ -359,8 +360,8 @@ def test():
     # self_delay = 60*60*24 # seconds in one day - 86,400
     self_delay = 3 # seconds in one day - 86,400
     scenario.h2("On-chain installment")
-    custFunding = sp.tez(5)
-    merchFunding = sp.tez(0)
+    custFunding = sp.mutez(CUST_DEPOSIT_MUTEZ)
+    merchFunding = sp.mutez(MERCH_DEPOSIT_MUTEZ)
     g2 = sp.bls12_381_g2(PUB_GEN_G2)
     y2s_0 = sp.bls12_381_g2(Y2S_0_G2)
     y2s_1 = sp.bls12_381_g2(Y2S_1_G2)
@@ -369,12 +370,9 @@ def test():
     y2s_4 = sp.bls12_381_g2(Y2S_4_G2)
     x2 = sp.bls12_381_g2(X2_G2)
 
-    # add_compilation_target allows us to compile the contract using the smartpy-cli
-    sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar))
-
     # Correct closing balances for the sample signature
-    customer_balance = sp.tez(4)
-    merchant_balance = sp.tez(1)
+    customer_balance = sp.mutez(CUST_CLOSE_BALANCE_MUTEZ)
+    merchant_balance = sp.mutez(MERCH_CLOSE_BALANCE_MUTEZ)
 
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
@@ -426,8 +424,8 @@ def test():
         ).run(sender = aliceCust)
     scenario.h3("merchDispute called with incorrect revocation_secret")
     scenario += mDisp.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
-    # scenario.h3("merchDispute called with correct revocation_secret")
-    # scenario += mDisp.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
+    scenario.h3("merchDispute called with correct revocation_secret")
+    scenario += mDisp.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
  
     scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
