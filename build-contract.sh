@@ -73,7 +73,7 @@ function brew_install() {
     fi
 }
 
-OUTPUT_DIR=tmp-contract
+TEMP_DIR=$(shell mktemp -d tmp-XXXX)
 CONTRACT_TARGET_DIR=${1:-.}
 SMARTPY_CONTRACT=zkchannels-contract/zkchannel_smartpy_script.py
 COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -105,11 +105,11 @@ set -x
 # install the smartPy CLI v0.7.4 (if not currently present)
 sh <(curl -s https://smartpy.io/releases/20210904-98c3fb1314a5298a5000fe3801d0b57238469670/cli/install.sh)
 # create the output dir
-mkdir -p $OUTPUT_DIR/
+mkdir -p $TEMP_DIR/
 # first let's test the script to ensure no build errors as a sanity check
-$HOME/smartpy-cli/SmartPy.sh test $SMARTPY_CONTRACT $OUTPUT_DIR/
+$HOME/smartpy-cli/SmartPy.sh test $SMARTPY_CONTRACT $TEMP_DIR/
 # then proceed to compile the smartPy script in the target output directory
-$HOME/smartpy-cli/SmartPy.sh compile $SMARTPY_CONTRACT $OUTPUT_DIR/
+$HOME/smartpy-cli/SmartPy.sh compile $SMARTPY_CONTRACT $TEMP_DIR/
 # identify the contract using the latest HEAD & clean up
-cp ${OUTPUT_DIR}/compiled_contract/*_contract.tz ${CONTRACT_TARGET_DIR}/zkchannel_contract_${COMMIT_HASH}.tz && rm -rf $OUTPUT_DIR
+cp ${TEMP_DIR}/compiled_contract/*_contract.tz ${CONTRACT_TARGET_DIR}/zkchannel_contract_${COMMIT_HASH}.tz && rm -rf $TEMP_DIR
 set +x
