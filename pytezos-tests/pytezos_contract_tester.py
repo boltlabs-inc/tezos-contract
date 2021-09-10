@@ -23,10 +23,9 @@ from pprint import pprint
 
 def originate(
 uri,
-close_scalar_bytes,
 cust_addr, merch_addr,
 cust_acc,
-cust_pubkey, merch_pubkey,
+merch_pubkey,
 channel_id,
 merch_g2, merch_y2s, merch_x2,
 cust_funding, merch_funding,
@@ -37,11 +36,8 @@ self_delay
     cust_py = pytezos.using(key=cust_acc, shell=uri)
 
     initial_storage = {"cid": channel_id, 
-    "close_scalar": close_scalar_bytes,
-    "context_string": "zkChannels mutual close",
     "customer_address": cust_addr, 
-    "customer_balance": cust_funding,  
-    "customer_public_key": cust_pubkey, 
+    "customer_balance": cust_funding, 
     "delay_expiry": "1970-01-01T00:00:00Z", 
     "g2": merch_g2,
     "merchant_address": merch_addr, 
@@ -347,10 +343,9 @@ def test_custclaim():
     print_header("Scenario test_custclaim: origination -> add_customer_funding -> cust_close -> cust_claim")
 
     origination_op = originate(uri,
-        close_scalar_bytes,
         cust_addr, merch_addr,
         cust_acc,
-        cust_pubkey, merch_pubkey,
+        merch_pubkey,
         channel_id,
         merch_g2, merch_y2s, merch_x2,
         cust_funding, merch_funding,
@@ -388,10 +383,9 @@ def test_dispute():
     print_header("Scenario test_dispute: origination -> add_customer_funding -> expiry -> cust_close -> merch_dispute")
 
     origination_op = originate(uri,
-        close_scalar_bytes,
         cust_addr, merch_addr,
         cust_acc,
-        cust_pubkey, merch_pubkey,
+        merch_pubkey,
         channel_id,
         merch_g2, merch_y2s, merch_x2,
         cust_funding, merch_funding,
@@ -435,10 +429,9 @@ def test_merchClaim():
     print_header("Scenario test_merchClaim: origination -> add_customer_funding -> expiry -> merch_claim")
 
     origination_op = originate(uri,
-        close_scalar_bytes,
         cust_addr, merch_addr,
         cust_acc,
-        cust_pubkey, merch_pubkey,
+        merch_pubkey,
         channel_id,
         merch_g2, merch_y2s, merch_x2,
         cust_funding, merch_funding,
@@ -475,10 +468,9 @@ def test_dualfund():
     cust_dual_funding = total_funding - merch_dual_funding
 
     origination_op = originate(uri,
-        close_scalar_bytes,
         cust_addr, merch_addr,
         cust_acc,
-        cust_pubkey, merch_pubkey,
+        merch_pubkey,
         channel_id,
         merch_g2, merch_y2s, merch_x2,
         cust_dual_funding, merch_dual_funding,
@@ -511,10 +503,9 @@ def test_reclaim():
     cust_dual_funding = total_funding - merch_dual_funding
 
     origination_op = originate(uri,
-        close_scalar_bytes,
         cust_addr, merch_addr,
         cust_acc,
-        cust_pubkey, merch_pubkey,
+        merch_pubkey,
         channel_id,
         merch_g2, merch_y2s, merch_x2,
         cust_dual_funding, merch_dual_funding,
@@ -561,7 +552,6 @@ establish_json = read_json_file(establish_file)
 
 # Load variables from establish_json
 merch_ps_pk = establish_json.get("merchant_ps_public_key")
-close_scalar_bytes = establish_json.get("close_scalar_bytes")
 channel_id = establish_json.get("channel_id")
 cust_funding = establish_json.get("customer_deposit")
 merch_funding = establish_json.get("merchant_deposit")
@@ -592,7 +582,6 @@ main_code = ContractInterface.from_file(zkchannel_contract)
 merch_py = pytezos.using(key=merch_acc, shell=uri)
 merch_pubkey = merch_py.key.public_key()
 cust_py = pytezos.using(key=cust_acc, shell=uri)
-cust_pubkey = cust_py.key.public_key()
 
 # Initialize the feetracker, used to record gas and storage costs of operations.
 feetracker = FeeTracker()

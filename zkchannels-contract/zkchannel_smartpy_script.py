@@ -18,6 +18,7 @@ Y2S_3_G2 = "0x03f479529090932a017d95deee54d66048b1c99e286193734db8dc610bc85f62fc
 Y2S_4_G2 = "0x1071998a1831f568d448c178b1c4d5f90a2c8191a027181957e87735eb7ec6c1b1b6f6245a2cff2d20e19a8b8719d91f05c265f2919fcc701c465462c423e05573442fb2b15eddd921bb77fa1ec29fc54ae24e672eb302ee695bd4726f629a4c0d42acb2a3f744a69cdd32733d6d467357a1d481088147cd086bfc33f391bb68c6a13c831d8deca8e36da604c63c08870c14be3600b29a3844ca2758a33172329ffa38284f99e96791fac534605c109cfe51752bcb8c143d6f86c2aa91a2a9aa"
 X2_G2 = "0x1304a722c780f8b4973dd4da42ef4148af2a580aa3aeddbdaba604a86ec6e62750d699bd13647089278a1e6cc490986f181529059281216c836f054f392efb90b4890a57e46f43f7dc5a8faf0fe41a1b2cd54402dd0af86b78c3a8e175daf9530a2d9d970935dc3e93463565b431d38e13456092bce8da73ed1c2274a02dd29e1e3e0dda7a6f1e0f6c67ab741b4cc20212dcab1cad18c655264f6f56a9ad1a383be2cd0c72d2fdb59ffea76cb1c9d57f84a0d82ea391579bb5e11bc61e40d136"
 CLOSE_SCALAR = "0x000000000000000000000000000000000000000000000000000000434c4f5345"
+CONTEXT_STRING = "zkChannels mutual close"
 
 # zkChannel contract statuses
 # AWAITING_CUST_FUNDING - The contract has been originated but not funded by either party. In this 
@@ -106,14 +107,8 @@ class ZkChannel(sp.Contract):
             y2s_2                = y2s_2,             # Pointcheval Sanders pubkey
             y2s_3                = y2s_3,             # Pointcheval Sanders pubkey
             y2s_4                = y2s_4,             # Pointcheval Sanders pubkey
-            x2                   = x2,                # Pointcheval Sanders pubkey
-            # A fixed scalar included in the message of Pointcheval Sanders closing signature when 
-            # calling custClose.
-            close_scalar         = close_scalar,
-            # context_string is contained in the tuple that gets signed when creating the mutual 
-            # close signature.
-            context_string       = sp.string("zkChannels mutual close"))
-
+            x2                   = x2                 # Pointcheval Sanders pubkey
+        )
     # addCustFunding is called by the customer to fund their portion of the channel (according to
     # the amount specified by custFunding). The full amount must be funded in one transaction. The
     # customer must fund their side of the channel before the merchant.
@@ -223,7 +218,7 @@ class ZkChannel(sp.Contract):
         y2s4 = self.data.y2s_4
         x2 = self.data.x2
         cid = self.data.cid
-        close_b = self.data.close_scalar
+        close_b = sp.bls12_381_fr(CLOSE_SCALAR)
 
         # Convert customer balance from mutez -> BLS12_381_fr (the scalar field of BLS12-381)
         # Mutez are encoded as 64-bit signed integers, so input must be smaller than the order of BLS12-381_fr
@@ -327,7 +322,7 @@ class ZkChannel(sp.Contract):
                                      merchSig,
                                      sp.pack(sp.record(
                                              contract_id = sp.self_address,
-                                             context_string = self.data.context_string,
+                                             context_string = sp.string(CONTEXT_STRING),
                                              cid = self.data.cid,
                                              customer_balance = customer_balance,
                                              merchant_balance = merchant_balance)
