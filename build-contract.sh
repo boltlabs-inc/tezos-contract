@@ -15,7 +15,6 @@ ORACLE_RELEASE=/etc/oracle-release
 SYSTEM_RELEASE=/etc/system-release
 DEBIAN_VERSION=/etc/debian_version
 
-PURPLE='\033[0;95m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
@@ -73,7 +72,22 @@ function brew_install() {
     fi
 }
 
-TEMP_DIR=$(shell mktemp -d tmp-XXXX)
+function smartpy_install() {
+  console "Installing SmartPy -> $1"
+  INSTALL=$1/SmartPy.sh
+  if test -f "$INSTALL"; then
+    echo "Found a SmartPy.sh script installed"
+  else
+    # install the smartPy CLI v0.7.4 (if not currently present)
+    sh <(curl -s https://smartpy.io/releases/20210904-98c3fb1314a5298a5000fe3801d0b57238469670/cli/install.sh) local-install $1
+  fi
+}
+
+# early termination for the script if any of the commands fail
+set -e
+
+TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'tmp-dir')
+SMARTPY_DIR=tmp-smartpy-cli
 CONTRACT_TARGET_DIR=${1:-.}
 SMARTPY_CONTRACT=zkchannels-contract/zkchannel_smartpy_script.py
 COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -87,29 +101,33 @@ CONTRACT_TARGET_DIR=$(realpath -s $CONTRACT_TARGET_DIR)
 if [[ "$(uname)" = "Darwin" ]]; then
     console "Compiling on MacOS ($(uname))"
     brew_install coreutils
+    smartpy_install ${SMARTPY_DIR}
 else
   platform OS
   distro $OS OS_VERSION
 
   if [[ $OS = "ubuntu" ]]; then
     console "Compiling on Ubuntu ($OS_VERSION)"
-    sh <(curl -s https://smartpy.io/cli/install.sh)
   elif [[ $OS = "debian" ]]; then
     console "Compiling on Debian ($OS_VERSION)"
   else
     fail "Need install steps for your OS: ($OS_VERSION)"
   fi
+  smartpy_install ${SMARTPY_DIR}
 fi
 
+console "Compiling & testing smart contract..."
 set -x
-# install the smartPy CLI v0.7.4 (if not currently present)
-sh <(curl -s https://smartpy.io/releases/20210904-98c3fb1314a5298a5000fe3801d0b57238469670/cli/install.sh)
 # create the output dir
 mkdir -p $TEMP_DIR/
 # first let's test the script to ensure no build errors as a sanity check
-$HOME/smartpy-cli/SmartPy.sh test $SMARTPY_CONTRACT $TEMP_DIR/
+$SMARTPY_DIR/SmartPy.sh test $SMARTPY_CONTRACT $TEMP_DIR/
 # then proceed to compile the smartPy script in the target output directory
-$HOME/smartpy-cli/SmartPy.sh compile $SMARTPY_CONTRACT $TEMP_DIR/
+$SMARTPY_DIR/SmartPy.sh compile $SMARTPY_CONTRACT $TEMP_DIR/
+set +x
+
+console "Installing the compiled contract..."
+set -x
 # identify the contract using the latest HEAD & clean up
 cp ${TEMP_DIR}/compiled_contract/*_contract.tz ${CONTRACT_TARGET_DIR}/zkchannel_contract_${COMMIT_HASH}.tz && rm -rf $TEMP_DIR
 set +x
