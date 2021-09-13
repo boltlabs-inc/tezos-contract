@@ -380,7 +380,9 @@ def test():
     merch_ps_pk_hash = sp.bytes(MERCH_PS_PK_HASH)
 
     # add_compilation_target allows us to compile the contract using the smartpy-cli
-    sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar))
+    sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, 
+    bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, close_scalar,
+    merch_ps_pk_hash))
 
     # Correct closing balances for the sample signature
     customer_balance = sp.tez(4)
