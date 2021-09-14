@@ -416,14 +416,14 @@ def test_dispute():
         min_confirmations
         )
 
-    # TODO: Add merch dispute scenario (needs a valid revocation_secret)
-    # op_info = merch_dispute(
-    #     merch_acc,
-    #     contract_id,
-    #     revocation_secret,
-    #     min_confirmations
-    #     )["op_info"]
-    # feetracker.add_result('merchDispute', op_info) 
+    op_info = merch_dispute(
+        merch_acc,
+        
+        origination_op["contract_id"],
+        revocation_secret,
+        min_confirmations
+        )["op_info"]
+    feetracker.add_result('merchDispute', op_info) 
 
 def test_merchClaim():
     print_header("Scenario test_merchClaim: origination -> add_customer_funding -> expiry -> merch_claim")
@@ -541,8 +541,9 @@ min_confirmations = args.min_confirmations
 self_delay = args.self_delay
 
 # Define paths for all the files that will be used in the tests.
-establish_file = "sample_files/out.5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67.establish.json"
-close_file = "sample_files/out.5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67.close.json"
+establish_file = "sample_files/le-establish.json"
+close_file = "sample_files/le-close.json"
+dispute_file = "sample_files/le-dispute.json"
 tezos_account1 = "sample_files/tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json"
 tezos_account2 = "sample_files/tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json"
 zkchannel_contract = "../zkchannels-contract/zkchannel_contract.tz"
@@ -567,6 +568,10 @@ sigma1, sigma2 = cs.get("sigma1"), cs.get("sigma2")
 revocation_lock = cust_close_json.get("revocation_lock")
 customer_balance = cust_close_json.get("customer_balance")
 merchant_balance = cust_close_json.get("merchant_balance")
+
+# Load revocation secret from dispute_json
+dispute_json = read_json_file(dispute_file)
+revocation_secret = dispute_json.get("revocation_secret")
 
 # Load tezos account variables
 cust_acc = tezos_account1
