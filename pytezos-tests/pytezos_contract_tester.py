@@ -26,8 +26,8 @@ uri,
 cust_addr, merch_addr,
 cust_acc,
 merch_pubkey,
+merch_ps_pk_hash,
 channel_id,
-merch_g2, merch_y2s, merch_x2,
 cust_funding, merch_funding,
 min_confirmations, 
 self_delay
@@ -39,17 +39,11 @@ self_delay
     "customer_address": cust_addr, 
     "customer_balance": cust_funding, 
     "delay_expiry": "1970-01-01T00:00:00Z", 
-    "g2": merch_g2,
     "merchant_address": merch_addr, 
     "merchant_balance": merch_funding, 
     "merchant_public_key": merch_pubkey, 
-    "y2s_0": merch_y2s[0],
-    "y2s_1": merch_y2s[1],
-    "y2s_2": merch_y2s[2],
-    "y2s_3": merch_y2s[3],
-    "y2s_4": merch_y2s[4],
-    "x2": merch_x2,
     "revocation_lock": "0x00", 
+    "merch_ps_pk_hash": merch_ps_pk_hash, 
     "self_delay": self_delay, 
     "status": 0}
 
@@ -117,6 +111,7 @@ contract_id,
 customer_balance, merchant_balance,
 sigma1, sigma2,
 revocation_lock,
+merch_g2, merch_y2s, merch_x2,
 min_confirmations,
 ):
     # Customer pytezos interface
@@ -131,7 +126,14 @@ min_confirmations,
         "merchant_balance": int(merchant_balance),
         "revocation_lock": revocation_lock,
         "sigma1": sigma1,
-        "sigma2": sigma2
+        "sigma2": sigma2,
+        "g2": merch_g2,
+        "y2s_0": merch_y2s[0],
+        "y2s_1": merch_y2s[1],
+        "y2s_2": merch_y2s[2],
+        "y2s_3": merch_y2s[3],
+        "y2s_4": merch_y2s[4],
+        "x2": merch_x2,
     }
 
     # Call the custClose entrypoint
@@ -346,8 +348,8 @@ def test_custclaim():
         cust_addr, merch_addr,
         cust_acc,
         merch_pubkey,
+        merch_ps_pk_hash,
         channel_id,
-        merch_g2, merch_y2s, merch_x2,
         cust_funding, merch_funding,
         min_confirmations, 
         self_delay
@@ -368,6 +370,7 @@ def test_custclaim():
         customer_balance, merchant_balance,
         sigma1, sigma2,
         revocation_lock,
+        merch_g2, merch_y2s, merch_x2,
         min_confirmations
         )["op_info"]
     feetracker.add_result('custClose', op_info) 
@@ -386,8 +389,8 @@ def test_dispute():
         cust_addr, merch_addr,
         cust_acc,
         merch_pubkey,
+        merch_ps_pk_hash,
         channel_id,
-        merch_g2, merch_y2s, merch_x2,
         cust_funding, merch_funding,
         min_confirmations, 
         self_delay
@@ -413,6 +416,7 @@ def test_dispute():
         customer_balance, merchant_balance,
         sigma1, sigma2,
         revocation_lock,
+        merch_g2, merch_y2s, merch_x2,
         min_confirmations
         )
 
@@ -432,8 +436,8 @@ def test_merchClaim():
         cust_addr, merch_addr,
         cust_acc,
         merch_pubkey,
+        merch_ps_pk_hash,
         channel_id,
-        merch_g2, merch_y2s, merch_x2,
         cust_funding, merch_funding,
         min_confirmations, 
         self_delay
@@ -471,8 +475,8 @@ def test_dualfund():
         cust_addr, merch_addr,
         cust_acc,
         merch_pubkey,
+        merch_ps_pk_hash,
         channel_id,
-        merch_g2, merch_y2s, merch_x2,
         cust_dual_funding, merch_dual_funding,
         min_confirmations, 
         self_delay
@@ -506,8 +510,8 @@ def test_reclaim():
         cust_addr, merch_addr,
         cust_acc,
         merch_pubkey,
+        merch_ps_pk_hash,
         channel_id,
-        merch_g2, merch_y2s, merch_x2,
         cust_dual_funding, merch_dual_funding,
         min_confirmations, 
         self_delay
@@ -539,6 +543,9 @@ else:
     uri = args.network
 min_confirmations = args.min_confirmations
 self_delay = args.self_delay
+
+# TODO: merch_ps_pk_hash should be passed in along with the establish_json info
+merch_ps_pk_hash = "0xb1082540d2d778a2ad3150f5fd88b8c34fd22a3e2035503e21f2d2fc0e43cf0f"
 
 # Define paths for all the files that will be used in the tests.
 establish_file = "sample_files/out.5f0b6efabc46808589acc4ffcfa9e9c8412cc097e45d523463da557d2c675c67.establish.json"
@@ -587,8 +594,8 @@ cust_py = pytezos.using(key=cust_acc, shell=uri)
 feetracker = FeeTracker()
 
 # Activate and reveal pubkeys for customer and merchant tezos accounts.
-activate_and_reveal(cust_acc)
-activate_and_reveal(merch_acc)
+# activate_and_reveal(cust_acc)
+# activate_and_reveal(merch_acc)
 
 # Test contract flows
 test_custclaim()
