@@ -7,14 +7,6 @@
 # Usage: ./build-contract.sh [ /optional/path/to/dir ]
 #
 
-# CENTOS_RELEASE=/etc/centos-release
-# REDHAT_RELEASE=/etc/redhat-release
-# FEDORA_RELEASE=/etc/fedora-release
-# LSB_RELEASE=/etc/lsb-release
-# ORACLE_RELEASE=/etc/oracle-release
-# SYSTEM_RELEASE=/etc/system-release
-# DEBIAN_VERSION=/etc/debian_version
-
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
