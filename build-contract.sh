@@ -7,13 +7,13 @@
 # Usage: ./build-contract.sh [ /optional/path/to/dir ]
 #
 
-CENTOS_RELEASE=/etc/centos-release
-REDHAT_RELEASE=/etc/redhat-release
-FEDORA_RELEASE=/etc/fedora-release
-LSB_RELEASE=/etc/lsb-release
-ORACLE_RELEASE=/etc/oracle-release
-SYSTEM_RELEASE=/etc/system-release
-DEBIAN_VERSION=/etc/debian_version
+# CENTOS_RELEASE=/etc/centos-release
+# REDHAT_RELEASE=/etc/redhat-release
+# FEDORA_RELEASE=/etc/fedora-release
+# LSB_RELEASE=/etc/lsb-release
+# ORACLE_RELEASE=/etc/oracle-release
+# SYSTEM_RELEASE=/etc/system-release
+# DEBIAN_VERSION=/etc/debian_version
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,38 +28,26 @@ function console() {
   printf "${GREEN}[+] $1${NC}\n"
 }
 
-function platform() {
-  local  __out=$1
-  if [[ -f "$LSB_RELEASE" ]] && grep -q 'DISTRIB_ID=Ubuntu' $LSB_RELEASE; then
-    FAMILY="debian"
-    eval $__out="ubuntu"
-  elif [[ -f "$DEBIAN_VERSION" ]]; then
-    FAMILY="debian"
-    eval $__out="debian"
-  elif [[ -f "$FEDORA_RELEASE" ]]; then
-    FAMILY="fedora"
-    eval $__out="fedora"
-  elif [[ -f "$CENTOS_RELEASE" ]]; then
-    FAMILY="centos"
-    eval $__out="centos"
-  elif [[ -f "$REDHAT_RELEASE" ]]; then
-    FAMILY="redhat"
-    eval $__out="redhat"
+OS_TYPE=$(uname)
+OS_RELEASE=/etc/os-release
+
+function get_os_release_id() {
+  if [[ -f "$OS_RELEASE" ]] ; then
+    awk -F= '$1=="ID" { print $2 ;}' $OS_RELEASE
+  elif [[ $OS_TYPE == "Darwin"* ]] ; then
+    echo 'darwin'
   else
-    eval $__out=`uname -s | tr '[:upper:]' '[:lower:]'`
+    echo 'unknown'
   fi
 }
 
-function distro() {
-  local __out=$2
-  if [[ $1 = "ubuntu" ]]; then
-    eval $__out=`awk -F= '/DISTRIB_CODENAME/ { print $2 }' $LSB_RELEASE`
-  elif [[ $1 = "darwin" ]]; then
-    eval $__out=`sw_vers -productVersion | awk -F '.' '{print $1 "." $2}'`
-  elif [[ $1 = "debian" ]]; then
-    eval $__out="`cat /etc/os-release | grep 'VERSION=' | cut -c 9-`"
+function get_os_release_version() {
+  if [[ -f $OS_RELEASE ]] ; then
+    awk -F= '$1=="VERSION" { print $2 ;}' $OS_RELEASE
+  elif [[ $OS_TYPE == "darwin"* ]] ; then
+    uname -s | tr '[:upper:]' '[:lower:]'
   else
-    eval $__out="unknown_version"
+    echo 'unknown'
   fi
 }
 
@@ -76,7 +64,7 @@ function smartpy_install() {
   console "Installing SmartPy -> $1"
   INSTALL=$1/SmartPy.sh
   if test -f "$INSTALL"; then
-    echo "Found a SmartPy.sh script installed"
+    echo "Found SmartPy.sh script installed"
   else
     # install the smartPy CLI v0.7.4 (if not currently present)
     sh <(curl -s https://smartpy.io/releases/20210904-98c3fb1314a5298a5000fe3801d0b57238469670/cli/install.sh) local-install $1
@@ -85,6 +73,9 @@ function smartpy_install() {
 
 # early termination for the script if any of the commands fail
 set -e
+
+OS_RELEASE_ID=$(get_os_release_id)
+OS_RELEASE_VERSION=$(get_os_release_version)
 
 TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'tmp-dir')
 SMARTPY_DIR=tmp-smartpy-cli
@@ -98,29 +89,29 @@ fi
 # get the full path to contract target dir
 CONTRACT_TARGET_DIR=$(realpath -s $CONTRACT_TARGET_DIR)
 
-if [[ "$(uname)" = "Darwin" ]]; then
-    console "Compiling on MacOS ($(uname))"
-    brew_install coreutils
-    smartpy_install ${SMARTPY_DIR}
-else
-  platform OS
-  distro $OS OS_VERSION
-
-  if [[ $OS = "ubuntu" ]]; then
-    console "Compiling on Ubuntu ($OS_VERSION)"
-  elif [[ $OS = "debian" ]]; then
-    console "Compiling on Debian ($OS_VERSION)"
-  else
-    fail "Need install steps for your OS: ($OS_VERSION)"
-  fi
-  smartpy_install ${SMARTPY_DIR}
+if ! [[ "$OS_RELEASE_ID" =~ ^(darwin|debian|ubuntu|fedora|centos)$ ]] ; then
+  fail "Need install steps for $OS_RELEASE_ID"
 fi
+
+# check and install system dependencies first
+if [[ "$OS_RELEASE_ID" = 'darwin' ]] ; then
+    console "Detected MacOS ($OS_TYPE)"
+    brew_install coreutils
+elif [[ "$OS_RELEASE_ID" = 'ubuntu' ]] ; then
+    console "Detected Ubuntu ($OS_VERSION)"
+elif [[ "$OS_RELEASE_ID" = 'debian' ]] ; then
+    console "Detected Debian ($OS_VERSION)"
+else
+    console "Detected ${OS_RELEASE_ID} ($OS_VERSION)"
+fi
+# attempt smartpy install in the current dir
+smartpy_install ${SMARTPY_DIR}
 
 console "Compiling & testing smart contract..."
 set -x
 # create the output dir
 mkdir -p $TEMP_DIR/
-# first let's test the script to ensure no build errors as a sanity check
+# test the script to ensure no build errors
 $SMARTPY_DIR/SmartPy.sh test $SMARTPY_CONTRACT $TEMP_DIR/
 # then proceed to compile the smartPy script in the target output directory
 $SMARTPY_DIR/SmartPy.sh compile $SMARTPY_CONTRACT $TEMP_DIR/
