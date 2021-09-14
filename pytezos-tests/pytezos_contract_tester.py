@@ -416,7 +416,6 @@ def test_dispute():
         min_confirmations
         )
 
-    # TODO: Add merch dispute scenario (needs a valid revocation_secret)
     op_info = merch_dispute(
         merch_acc,
         
