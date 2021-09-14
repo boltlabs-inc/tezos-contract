@@ -2,7 +2,7 @@
 
 # Build script to compile/test the smart contract using the SmartPy CLI. 
 # Includes an optional argument to specify a target directory to copy 
-# the generated contract file. Default target dir is the current directory.
+# the generated contract file. Default target is the current directory.
 #
 # Usage: ./build-contract.sh [ /optional/path/to/dir ]
 #
@@ -63,7 +63,7 @@ function smartpy_install() {
   fi
 }
 
-# early termination for the script if any of the commands fail
+# early termination if any of the commands fail
 set -e
 
 OS_RELEASE_ID=$(get_os_release_id)
