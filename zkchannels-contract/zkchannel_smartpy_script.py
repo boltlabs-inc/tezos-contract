@@ -374,6 +374,9 @@ def test():
     customer_balance = sp.mutez(CUST_CLOSE_BALANCE_MUTEZ)
     merchant_balance = sp.mutez(MERCH_CLOSE_BALANCE_MUTEZ)
 
+    # add_compilation_target allows us to compile the contract using the smartpy-cli
+    sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar))
+
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
     mClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
