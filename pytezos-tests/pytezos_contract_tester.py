@@ -353,6 +353,10 @@ class FeeTracker:
 
     def print_fees(self):
         pprint(self.fees)
+    
+    def save_json(self):
+        with open('fees.json', 'w') as outfile:
+            json.dump(self.fees, outfile, indent=4)
 
 def test_custclaim():
     print_header("Scenario test_custclaim: origination -> add_customer_funding -> cust_close -> cust_claim")
@@ -619,4 +623,5 @@ test_reclaim()
 
 # Print gas and storage costs of the operations tested.
 feetracker.print_fees()
+# feetracker.save_json()
 print("Tests finished!")
