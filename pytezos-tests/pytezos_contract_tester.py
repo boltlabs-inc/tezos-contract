@@ -18,6 +18,7 @@ import argparse
 import json
 from pytezos import pytezos, ContractInterface
 from pprint import pprint
+import requests
 
 ###################### Start of functions used by zeekoe ######################
 
@@ -325,7 +326,13 @@ def activate_and_reveal(account):
 class FeeTracker:
     def __init__(self):
         self.fees = []
-    
+        # get protocol constants from tzstats (mainnet)
+        r =requests.get('https://api.tzstats.com/explorer/config/head')
+        # get byte cost for the current protocol
+        self.byte_cost = r.json()['cost_per_byte']
+        # get size in bytes of creating a new address
+        self.origination_size = r.json()['origination_size'] 
+
     def add_result(self, op_name, result):
         """Add the fees from the operation costs to self.fees"""
         costs = {}
@@ -336,11 +343,11 @@ class FeeTracker:
         if "paid_storage_size_diff" in op_metadata:
             storage_bytes = int(op_metadata["paid_storage_size_diff"])
         costs["storage_bytes"] = storage_bytes
-        costs["storage_cost"] = int(storage_bytes) * 250 # 250 mutez per storage_bytes byte on edo
+        costs["storage_cost"] = int(storage_bytes) * self.byte_cost 
         costs["total_cost"] = costs["fee"] + costs["storage_cost"]
         # "originate" operation incurs a fixed allocation_fee for creating a new contract address
         if op_name == "originate":
-            costs["allocation_fee"] = 64250
+            costs["allocation_fee"] = self.byte_cost * self.origination_size
             costs["total_cost"] += costs["allocation_fee"]
         self.fees.append({op_name:costs})
 
