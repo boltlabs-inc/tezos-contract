@@ -18,6 +18,7 @@ import argparse
 import json
 from pytezos import pytezos, ContractInterface
 from pprint import pprint
+import requests
 
 ###################### Start of functions used by zeekoe ######################
 
@@ -325,19 +326,37 @@ def activate_and_reveal(account):
 class FeeTracker:
     def __init__(self):
         self.fees = []
-    
+        # get protocol constants from tzstats (mainnet)
+        r =requests.get('https://api.tzstats.com/explorer/config/head')
+        # get byte cost for the current protocol
+        self.byte_cost = r.json()['cost_per_byte']
+        # get size in bytes of creating a new address
+        self.origination_size = r.json()['origination_size'] 
+
     def add_result(self, op_name, result):
-        """Add the fees from the operation result to self.fees"""
-        fee = int(result['contents'][0]['fee'])
-        storage_bytes = int(result['contents'][0]['storage_limit'])
-        storage_cost = int(storage_bytes) * 250 # 250 mutez per storage_bytes byte on edo
-        gas = int(result["contents"][0]["metadata"]["operation_result"]["consumed_gas"])
-        total_cost = fee + storage_cost
-        fee = {"total_cost":total_cost, "fee":fee, "storage_bytes":storage_bytes, "storage_cost":storage_cost, "gas":gas}
-        self.fees.append({op_name:fee})
+        """Add the fees from the operation costs to self.fees"""
+        costs = {}
+        op_metadata = result["contents"][0]["metadata"]["operation_result"]
+        costs["gas"] = int(op_metadata["consumed_gas"])
+        costs["fee"] = int(result['contents'][0]['fee'])
+        storage_bytes = 0
+        if "paid_storage_size_diff" in op_metadata:
+            storage_bytes = int(op_metadata["paid_storage_size_diff"])
+        costs["storage_bytes"] = storage_bytes
+        costs["storage_cost"] = int(storage_bytes) * self.byte_cost 
+        costs["total_cost"] = costs["fee"] + costs["storage_cost"]
+        # "originate" operation incurs a fixed allocation_fee for creating a new contract address
+        if op_name == "originate":
+            costs["allocation_fee"] = self.byte_cost * self.origination_size
+            costs["total_cost"] += costs["allocation_fee"]
+        self.fees.append({op_name:costs})
 
     def print_fees(self):
         pprint(self.fees)
+    
+    def save_json(self):
+        with open('fees.json', 'w') as outfile:
+            json.dump(self.fees, outfile, indent=4)
 
 def test_custclaim():
     print_header("Scenario test_custclaim: origination -> add_customer_funding -> cust_close -> cust_claim")
@@ -525,7 +544,7 @@ def test_reclaim():
         origination_op["contract_id"],
         min_confirmations
         )["op_info"]
-    feetracker.add_result('addMerchFunding', op_info) 
+    feetracker.add_result('reclaimFunding', op_info) 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-n", "--network", type=str, required=True, help="either 'testnet' or the RPC node uri")
@@ -604,4 +623,5 @@ test_reclaim()
 
 # Print gas and storage costs of the operations tested.
 feetracker.print_fees()
+# feetracker.save_json()
 print("Tests finished!")
