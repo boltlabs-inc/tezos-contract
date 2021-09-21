@@ -112,5 +112,5 @@ set +x
 console "Installing the compiled contract..."
 set -x
 # identify the contract using the latest HEAD & clean up
-cp ${TEMP_DIR}/compiled_contract/*_contract.tz ${CONTRACT_TARGET_DIR}/zkchannel_contract_${COMMIT_HASH}.tz && rm -rf $TEMP_DIR
+cp ${TEMP_DIR}/compiled_contract/*_contract.json ${CONTRACT_TARGET_DIR}/zkchannel_contract_${COMMIT_HASH}.json && rm -rf $TEMP_DIR
 set +x
