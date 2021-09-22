@@ -565,7 +565,7 @@ close_file = "sample_files/le-close.json"
 dispute_file = "sample_files/le-dispute.json"
 tezos_account1 = "sample_files/tz1iKxZpa5x1grZyN2Uw9gERXJJPMyG22Sqp.json"
 tezos_account2 = "sample_files/tz1bXwRiFvijKnZYUj9J53oYE3fFkMTWXqNx.json"
-zkchannel_contract = "../zkchannels-contract/zkchannel_contract.tz"
+zkchannel_contract = "../zkchannels-contract/zkchannel_contract.json"
 
 # Load establish parameters from establish.json
 establish_json = read_json_file(establish_file)
@@ -599,8 +599,9 @@ merch_acc = tezos_account2
 merch_addr = read_json_file(merch_acc)["pkh"]
 
 # Load the zkchannels contract
-zkchannel_contract = "../zkchannels-contract/zkchannel_contract.tz"
-main_code = ContractInterface.from_file(zkchannel_contract)
+f = open(zkchannel_contract,)
+data = json.load(f)
+main_code = ContractInterface.from_micheline(data)
 
 # Query the blockchain to get the merchant's and customer's public keys
 merch_py = pytezos.using(key=merch_acc, shell=uri)
