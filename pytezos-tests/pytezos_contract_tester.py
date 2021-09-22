@@ -553,7 +553,7 @@ parser.add_argument("-m", "--min_confirmations", type=int, default=1, help="the 
 args = parser.parse_args()
 
 if args.network == "testnet":
-    uri = "https://rpc.tzkt.io/edo2net/"
+    uri = "https://rpc.tzkt.io/granadanet"
 else:
     uri = args.network
 min_confirmations = args.min_confirmations
@@ -563,8 +563,8 @@ self_delay = args.self_delay
 establish_file = "sample_files/le-establish.json"
 close_file = "sample_files/le-close.json"
 dispute_file = "sample_files/le-dispute.json"
-tezos_account1 = "sample_files/tz1S6eSPZVQzHyPF2bRKhSKZhDZZSikB3e51.json"
-tezos_account2 = "sample_files/tz1VcYZwxQoyxfjhpNiRkdCUe5rzs53LMev6.json"
+tezos_account1 = "sample_files/tz1iKxZpa5x1grZyN2Uw9gERXJJPMyG22Sqp.json"
+tezos_account2 = "sample_files/tz1bXwRiFvijKnZYUj9J53oYE3fFkMTWXqNx.json"
 zkchannel_contract = "../zkchannels-contract/zkchannel_contract.tz"
 
 # Load establish parameters from establish.json
