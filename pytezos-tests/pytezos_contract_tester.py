@@ -50,7 +50,7 @@ self_delay
     "y2s_3": merch_y2s[3],
     "y2s_4": merch_y2s[4],
     "x2": merch_x2,
-    "revocation_lock": "0x00", 
+    "revocation_lock": "0x0000000000000000000000000000000000000000000000000000000000000000", 
     "self_delay": self_delay, 
     "status": 0}
 
