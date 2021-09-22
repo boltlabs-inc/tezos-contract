@@ -101,7 +101,7 @@ class ZkChannel(sp.Contract):
             # will be passed in as an argument and stored in revocation_lock. If the merchant has the 
             # revocation secret corresponding to revocation_lock, they can claim the entire balance using 
             # the merchDispute entrypoint.
-            revocation_lock      = sp.bytes("0x00"),
+            revocation_lock      = sp.bls12_381_fr("0x0000000000000000000000000000000000000000000000000000000000000000"),
             # An enforced delay period that must have elapsed between calling custClose and 
             # custClaim, and between calling expiry and merchClaim.
             self_delay           = self_delay,
@@ -206,7 +206,7 @@ class ZkChannel(sp.Contract):
     # closing balances (customer_balance, merchant_balance), the revocation lock (revocation_lock), and the 
     # Pointcheval Sanders closing signature (sigma1, sigma2).
     @sp.entry_point
-    def custClose(self, customer_balance: sp.TMutez, merchant_balance: sp.TMutez, revocation_lock: sp.TBytes, sigma1: sp.TBls12_381_g1, sigma2: sp.TBls12_381_g1):
+    def custClose(self, customer_balance: sp.TMutez, merchant_balance: sp.TMutez, revocation_lock: sp.TBls12_381_fr, sigma1: sp.TBls12_381_g1, sigma2: sp.TBls12_381_g1):
         # Only allow the customer to call the entrypoint.
         sp.verify(self.data.customer_address == sp.sender)
         # Verify that the contract status is either OPEN or EXPIRY.
@@ -244,17 +244,11 @@ class ZkChannel(sp.Contract):
         # Product is computed modulo the order of BLS12_381_fr
         merch_bal_b = sp.local("merch_bal_b", sp.mul(merch_b.value, sp.bls12_381_fr("0x01")))
 
-        # Convert revocation_lock from bytes -> fr
-        # 0x050a000000 is the prefix for Fr elements in Michelson
-        # 0x20 following this prefix means 32 bytes (0x20 in hexa) are expected next
-        rev_lock_packed = sp.local('rev_lock_packed', sp.concat([sp.bytes("0x050a00000020"), revocation_lock]))
-        rev_lock_b = sp.local('rev_lock_b', sp.unpack(rev_lock_packed.value, t = sp.TBls12_381_fr).open_some())
-
         # Verify Pointcheval Sanders signature against the message
         pk = [y2s0, y2s1, y2s2, y2s3, y2s4]
         # the message is composed of the channel ID, close flag, revocation lock, cust closing balance and 
         # merchant closing balance.
-        msg = [cid, close_b, rev_lock_b.value, cust_bal_b.value, merch_bal_b.value]
+        msg = [cid, close_b, revocation_lock, cust_bal_b.value, merch_bal_b.value]
         prod1 = sp.local('prod1', x2)
         for i in range(0, len(msg)):
             prod1.value += sp.mul(pk[i], msg[i])
@@ -284,8 +278,12 @@ class ZkChannel(sp.Contract):
         sp.verify(self.data.merchant_address == sp.sender)
         # Verify that the contract status is CUST_CLOSE.
         sp.verify(self.data.status == CUST_CLOSE)
+        # Compute hash of the secret (in bytes), then convert to bls12_381_fr
+        hash_bytes = sp.sha3(revocation_secret)
+        hash_packed = sp.local('hash_packed', sp.concat([sp.bytes("0x050a00000020"), hash_bytes]))
+        hash_fr = sp.local('hash_fr', sp.unpack(hash_packed.value, t = sp.TBls12_381_fr).open_some())
         # Verify the revocation secret hashes to the revocation lock
-        sp.verify(self.data.revocation_lock == sp.sha3(revocation_secret))
+        sp.verify_equal(self.data.revocation_lock, hash_fr.value)
         # Send the customer's (revoked) balance to the merchant
         sp.send(self.data.merchant_address, self.data.customer_balance)
         # Set the channel status to CLOSED.
@@ -337,7 +335,6 @@ class ZkChannel(sp.Contract):
             sp.send(self.data.merchant_address, merchant_balance)
         # Set the channel status to CLOSED.
         self.data.status = CLOSED
- 
  
  
 @sp.add_test(name = "basic")
@@ -400,7 +397,7 @@ def test():
     scenario.p("For the payment to be considered complete, the customer should have received a signature from the merchant reflecting the final balances, and the merchant should have received the revocation_secret corresponding to the previous state's revocation_lock.")
     scenario.h3("custClose")
     scenario += cClaim.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance,
         merchant_balance = merchant_balance,
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -419,7 +416,7 @@ def test():
     scenario += mDisp.addCustFunding().run(sender = aliceCust, amount = custFunding)
     scenario.h3("custClose")
     scenario += mDisp.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -440,7 +437,7 @@ def test():
     scenario += cClose.expiry().run(sender = bobMerch)
     scenario.h3("custClose")
     scenario += cClose.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -473,7 +470,7 @@ def test():
     # short_revocation_lock has 31 bytes instead of 32 bytes
     short_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(short_revocation_lock), 
+        revocation_lock = sp.bls12_381_fr(short_revocation_lock), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -484,7 +481,7 @@ def test():
     # long_revocation_lock has 33 bytes instead of 32 bytes
     long_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7f7f7"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(long_revocation_lock), 
+        revocation_lock = sp.bls12_381_fr(long_revocation_lock), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -496,7 +493,7 @@ def test():
     # revocation_lock that the signature was produced over.
     invalid_revocation_lock = "0x1111111111111111111111111111111111111111111111111111111111111111"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(invalid_revocation_lock), 
+        revocation_lock = sp.bls12_381_fr(invalid_revocation_lock), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -506,7 +503,7 @@ def test():
     scenario.h3("Invalid cust balance")
     # set customer_balance to sp.tez(5) instead of sp.tez(4)
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = sp.tez(5), 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -516,7 +513,7 @@ def test():
     scenario.h3("Invalid merch balance")
     # set merchant_balance to sp.tez(0) instead of sp.tez(1)
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = sp.tez(0), 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -526,7 +523,7 @@ def test():
     scenario.h3("Invalid closing signature - identity element as sigma 1")
     # set sigma1 to the identity element (IDENTITY_IN_G1)
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(IDENTITY_IN_G1), 
@@ -537,7 +534,7 @@ def test():
     # short_sigma_1 has a length of 95 bytes instead of 96 bytes
     short_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(short_sigma_1), 
@@ -548,7 +545,7 @@ def test():
     # long_sigma_1 has a length of 97 bytes instead of 96 bytes
     long_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cfaa"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(long_sigma_1), 
@@ -559,7 +556,7 @@ def test():
     # short_sigma_2 has a length of 95 bytes instead of 96 bytes
     short_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e6"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -570,7 +567,7 @@ def test():
     # long_sigma_2 has a length of 97 bytes instead of 96 bytes
     long_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630aa"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
@@ -580,7 +577,7 @@ def test():
     scenario.h3("Invalid closing signature value - invalid sigma 1")
     invalid_sigma_1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(invalid_sigma_1), 
@@ -590,7 +587,7 @@ def test():
     scenario.h3("Invalid closing signature value - invalid sigma 2")
     invalid_sigma_2 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
     scenario += failCust.custClose(
-        revocation_lock = sp.bytes(REV_LOCK_FR), 
+        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
         customer_balance = customer_balance, 
         merchant_balance = merchant_balance, 
         sigma1 = sp.bls12_381_g1(SIGMA_1), 
