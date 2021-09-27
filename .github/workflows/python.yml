@@ -26,3 +26,6 @@ jobs:
 
     - name: Confirm tz artifact is up-to-date
       run: diff -q CI_OUTPUT/zkchannel_contract_$(git rev-parse --short HEAD).tz zkchannels-contract/zkchannel_contract.tz
+
+    - name: Test whether a bad equality fails
+      run: diff -q CI_OUTPUT/zkchannel_contract_$(git rev-parse --short HEAD).tz zkchannels-contract/zkchannel_contract.json
