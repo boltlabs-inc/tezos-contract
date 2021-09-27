@@ -1,0 +1,25 @@
+name: Python
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - run: mkdir CI_OUTPUT
+
+    - name: Build contract
+      run: ./build-contract.sh CI_OUTPUT/
+
+    - name: Confirm JSON artifact is up-to-date
+      run: diff -q CI_OUTPUT/zkchannel_contract_$(git rev-parse --short HEAD).json zkchannels-contract/zkchannel_contract.json
