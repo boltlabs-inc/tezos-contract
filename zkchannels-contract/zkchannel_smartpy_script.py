@@ -277,15 +277,16 @@ class ZkChannel(sp.Contract):
         # Only allow the merchant to call the entrypoint.
         sp.verify(self.data.merchant_address == sp.sender)
         # Verify that the contract status is CUST_CLOSE.
-        sp.verify(self.data.status == CUST_CLOSE)
+        # sp.verify(self.data.status == CUST_CLOSE)
         # Compute hash of the secret (in bytes), then convert to bls12_381_fr
         hash_bytes = sp.sha3(revocation_secret)
         hash_packed = sp.local('hash_packed', sp.concat([sp.bytes("0x050a00000020"), hash_bytes]))
         hash_fr = sp.local('hash_fr', sp.unpack(hash_packed.value, t = sp.TBls12_381_fr).open_some())
         # Verify the revocation secret hashes to the revocation lock
-        sp.verify_equal(self.data.revocation_lock, hash_fr.value)
+        self.data.cid = hash_fr.value
+        # sp.verify_equal(self.data.revocation_lock, hash_fr.value)
         # Send the customer's (revoked) balance to the merchant
-        sp.send(self.data.merchant_address, self.data.customer_balance)
+        # sp.send(self.data.merchant_address, self.data.customer_balance)
         # Set the channel status to CLOSED.
         self.data.status = CLOSED
  
@@ -376,319 +377,339 @@ def test():
     # add_compilation_target allows us to compile the contract using the smartpy-cli
     sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry))
 
-    scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
+    scenario.h2("merchDispute with valid secret")
     scenario.h3("escrow")
-    mClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += mClaim
-    scenario.h3("Funding the channel")
-    scenario += mClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
-    scenario.h3("expiry")
-    scenario += mClaim.expiry().run(sender = bobMerch, now = sp.timestamp(0))
-    scenario.h3("unsuccessful merchClaim before delay period")
-    scenario += mClaim.merchClaim().run(sender = bobMerch, now = sp.timestamp(1), valid = False)
-    scenario.h3("successful merchClaim after delay period")
-    scenario += mClaim.merchClaim().run(sender = bobMerch, now = sp.timestamp(100000))
- 
-    scenario.h2("Scenario 2: escrow -> custClose -> custClaim")
-    scenario.h3("escrow")
-    cClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += cClaim
-    scenario.h3("Funding the channel")
-    scenario += cClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
-    scenario.p("Now the customer and merchant make a payment off chain.")
-    scenario.p("For the payment to be considered complete, the customer should have received a signature from the merchant reflecting the final balances, and the merchant should have received the revocation_secret corresponding to the previous state's revocation_lock.")
-    scenario.h3("custClose")
-    scenario += cClaim.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance,
-        merchant_balance = merchant_balance,
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, now = sp.timestamp(0))
-    scenario.h3("unsuccessful custClaim attempt before delay period")
-    scenario += cClaim.custClaim().run(sender = aliceCust, now = sp.timestamp(1), valid = False)
-    scenario.h3("successful custClaim after delay period")
-    scenario += cClaim.custClaim().run(sender = aliceCust, now = sp.timestamp(100000))
- 
-    scenario.h2("Scenario 3: escrow -> custClose -> merchDispute")
-    scenario.h3("escrow")
-    mDisp = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    mDisp = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, sp.bls12_381_fr(REV_LOCK_FR), init_status, init_delay_expiry)
     scenario += mDisp
-    scenario.h3("Funding the channel")
-    scenario += mDisp.addCustFunding().run(sender = aliceCust, amount = custFunding)
-    scenario.h3("custClose")
-    scenario += mDisp.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust)
-    scenario.h3("merchDispute called with incorrect revocation_secret")
-    scenario += mDisp.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
     scenario.h3("merchDispute called with correct revocation_secret")
     scenario += mDisp.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
+
+
+    scenario.h2("merchDispute with large hash")
+    
+    rev_secret = sp.bytes("0xdc2aff71a1a2975e14301e50844064a0afb2a593ccc1460e4a0dd5bb36a7d744")
+    revocation_lock = sp.bls12_381_fr("0x29307053aec4c70adffde4c5706e4df68edd5548d25b2dd7b673ce15b1d5c0c4")
+
+    scenario.h3("escrow")
+    mDisp = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, revocation_lock, init_status, init_delay_expiry)
+    scenario += mDisp
+    scenario.h3("merchDispute")
+    scenario += mDisp.merchDispute(rev_secret).run(sender = bobMerch, now = sp.timestamp(1))
  
-    scenario.h2("Scenario 4: escrow -> expiry -> custClose")
-    scenario.h3("escrow")
-    cClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += cClose
-    scenario.h3("Funding the channel")
-    scenario += cClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
-    scenario.h3("expiry")
-    scenario += cClose.expiry().run(sender = bobMerch)
-    scenario.h3("custClose")
-    scenario += cClose.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust)
+
+    # scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
+    # scenario.h3("escrow")
+    # mClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += mClaim
+    # scenario.h3("Funding the channel")
+    # scenario += mClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.h3("expiry")
+    # scenario += mClaim.expiry().run(sender = bobMerch, now = sp.timestamp(0))
+    # scenario.h3("unsuccessful merchClaim before delay period")
+    # scenario += mClaim.merchClaim().run(sender = bobMerch, now = sp.timestamp(1), valid = False)
+    # scenario.h3("successful merchClaim after delay period")
+    # scenario += mClaim.merchClaim().run(sender = bobMerch, now = sp.timestamp(100000))
  
-    scenario.h2("Scenario 5: escrow -> mutualClose")
-    scenario.h3("escrow")
-    mutClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += mutClose
-    scenario.h3("Funding the channel")
-    scenario += mutClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
-    # Merchant's signature on the latest state
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = mutClose.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
-                                                                  cid = cid,
-                                                                  customer_balance = customer_balance,
-                                                                  merchant_balance = merchant_balance)))
-    scenario.h3("mutualClose")
-    scenario += mutClose.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust)
+    # scenario.h2("Scenario 2: escrow -> custClose -> custClaim")
+    # scenario.h3("escrow")
+    # cClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += cClaim
+    # scenario.h3("Funding the channel")
+    # scenario += cClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.p("Now the customer and merchant make a payment off chain.")
+    # scenario.p("For the payment to be considered complete, the customer should have received a signature from the merchant reflecting the final balances, and the merchant should have received the revocation_secret corresponding to the previous state's revocation_lock.")
+    # scenario.h3("custClose")
+    # scenario += cClaim.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance,
+    #     merchant_balance = merchant_balance,
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, now = sp.timestamp(0))
+    # scenario.h3("unsuccessful custClaim attempt before delay period")
+    # scenario += cClaim.custClaim().run(sender = aliceCust, now = sp.timestamp(1), valid = False)
+    # scenario.h3("successful custClaim after delay period")
+    # scenario += cClaim.custClaim().run(sender = aliceCust, now = sp.timestamp(100000))
  
-    scenario.h2("Scenario 6: Failing tests for custClose")
-    scenario.h3("escrow")
-    failCust = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += failCust
-    scenario += failCust.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.h2("Scenario 3: escrow -> custClose -> merchDispute")
+    # scenario.h3("escrow")
+    # mDisp = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += mDisp
+    # scenario.h3("Funding the channel")
+    # scenario += mDisp.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.h3("custClose")
+    # scenario += mDisp.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust)
+    # scenario.h3("merchDispute called with incorrect revocation_secret")
+    # scenario += mDisp.merchDispute(sp.bytes("0x1111111111111111111111111111111111111111111111111111111111111111")).run(sender = bobMerch, now = sp.timestamp(1), valid = False)
+    # scenario.h3("merchDispute called with correct revocation_secret")
+    # scenario += mDisp.merchDispute(sp.bytes(REV_SECRET)).run(sender = bobMerch, now = sp.timestamp(1))
+ 
+    # scenario.h2("Scenario 4: escrow -> expiry -> custClose")
+    # scenario.h3("escrow")
+    # cClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += cClose
+    # scenario.h3("Funding the channel")
+    # scenario += cClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.h3("expiry")
+    # scenario += cClose.expiry().run(sender = bobMerch)
+    # scenario.h3("custClose")
+    # scenario += cClose.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust)
+ 
+    # scenario.h2("Scenario 5: escrow -> mutualClose")
+    # scenario.h3("escrow")
+    # mutClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += mutClose
+    # scenario.h3("Funding the channel")
+    # scenario += mutClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # # Merchant's signature on the latest state
+    # merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+    #                                                               contract_id = mutClose.address,
+    #                                                               context_string = sp.string("zkChannels mutual close"),
+    #                                                               cid = cid,
+    #                                                               customer_balance = customer_balance,
+    #                                                               merchant_balance = merchant_balance)))
+    # scenario.h3("mutualClose")
+    # scenario += mutClose.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust)
+ 
+    # scenario.h2("Scenario 6: Failing tests for custClose")
+    # scenario.h3("escrow")
+    # failCust = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += failCust
+    # scenario += failCust.addCustFunding().run(sender = aliceCust, amount = custFunding)
 
-    scenario.h3("Invalid revocation_lock (31 bytes instead of 32 bytes)")
-    # short_revocation_lock has 31 bytes instead of 32 bytes
-    short_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(short_revocation_lock), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid revocation_lock (31 bytes instead of 32 bytes)")
+    # # short_revocation_lock has 31 bytes instead of 32 bytes
+    # short_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(short_revocation_lock), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid revocation_lock (33 bytes instead of 32 bytes)")
-    # long_revocation_lock has 33 bytes instead of 32 bytes
-    long_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7f7f7"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(long_revocation_lock), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid revocation_lock (33 bytes instead of 32 bytes)")
+    # # long_revocation_lock has 33 bytes instead of 32 bytes
+    # long_revocation_lock = "0xef92f88aeed6781dc822fd6c88daf585474ab639aa06661df1fd05829b0ef7f7f7"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(long_revocation_lock), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid revocation_lock value")
-    # invalid_revocation_lock has the correct length (32 bytes) but does not match the 
-    # revocation_lock that the signature was produced over.
-    invalid_revocation_lock = "0x1111111111111111111111111111111111111111111111111111111111111111"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(invalid_revocation_lock), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid revocation_lock value")
+    # # invalid_revocation_lock has the correct length (32 bytes) but does not match the 
+    # # revocation_lock that the signature was produced over.
+    # invalid_revocation_lock = "0x1111111111111111111111111111111111111111111111111111111111111111"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(invalid_revocation_lock), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid cust balance")
-    # set customer_balance to sp.tez(5) instead of sp.tez(4)
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = sp.tez(5), 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid cust balance")
+    # # set customer_balance to sp.tez(5) instead of sp.tez(4)
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = sp.tez(5), 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid merch balance")
-    # set merchant_balance to sp.tez(0) instead of sp.tez(1)
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = sp.tez(0), 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid merch balance")
+    # # set merchant_balance to sp.tez(0) instead of sp.tez(1)
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = sp.tez(0), 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature - identity element as sigma 1")
-    # set sigma1 to the identity element (IDENTITY_IN_G1)
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(IDENTITY_IN_G1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid closing signature - identity element as sigma 1")
+    # # set sigma1 to the identity element (IDENTITY_IN_G1)
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(IDENTITY_IN_G1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature length - short sigma 1")
-    # short_sigma_1 has a length of 95 bytes instead of 96 bytes
-    short_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(short_sigma_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid closing signature length - short sigma 1")
+    # # short_sigma_1 has a length of 95 bytes instead of 96 bytes
+    # short_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(short_sigma_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature length - long sigma 1")
-    # long_sigma_1 has a length of 97 bytes instead of 96 bytes
-    long_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cfaa"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(long_sigma_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid closing signature length - long sigma 1")
+    # # long_sigma_1 has a length of 97 bytes instead of 96 bytes
+    # long_sigma_1 = "0x1189f6f8bb0dc1c6d34abb4a00e9d990d1dd62a019bdbedf95c3d51b9b13bf5a38edb316f990c4142f5cc8ad6a14074a18c36110d08d3543d333f6f9c9fe42dc580774cce2f3d3d3e0eb498486cf2617477929e980faf9dc89be569b2b46e7cfaa"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(long_sigma_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature length - short sigma 2")
-    # short_sigma_2 has a length of 95 bytes instead of 96 bytes
-    short_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e6"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(short_sigma_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid closing signature length - short sigma 2")
+    # # short_sigma_2 has a length of 95 bytes instead of 96 bytes
+    # short_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e6"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(short_sigma_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature length - long sigma 2")
-    # long_sigma_2 has a length of 97 bytes instead of 96 bytes
-    long_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630aa"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(long_sigma_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid closing signature length - long sigma 2")
+    # # long_sigma_2 has a length of 97 bytes instead of 96 bytes
+    # long_sigma_2 = "0x101cae6b21d198c69532944c3fd06af167ccc256d3c27c4eca5ac501ce928d8c30467f549e8f4a8c82733943e06bd9290a12c39ddd1dc362b48e77a1fb629f3655a87b6a4d499183fc768717bf18666bb065825b8f06e72c40b68c8307a5e630aa"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(long_sigma_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature value - invalid sigma 1")
-    invalid_sigma_1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(invalid_sigma_1), 
-        sigma2 = sp.bls12_381_g1(SIGMA_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid closing signature value - invalid sigma 1")
+    # invalid_sigma_1 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(invalid_sigma_1), 
+    #     sigma2 = sp.bls12_381_g1(SIGMA_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid closing signature value - invalid sigma 2")
-    invalid_sigma_2 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
-    scenario += failCust.custClose(
-        revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
-        customer_balance = customer_balance, 
-        merchant_balance = merchant_balance, 
-        sigma1 = sp.bls12_381_g1(SIGMA_1), 
-        sigma2 = sp.bls12_381_g1(invalid_sigma_2)
-        ).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid closing signature value - invalid sigma 2")
+    # invalid_sigma_2 = "0x111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    # scenario += failCust.custClose(
+    #     revocation_lock = sp.bls12_381_fr(REV_LOCK_FR), 
+    #     customer_balance = customer_balance, 
+    #     merchant_balance = merchant_balance, 
+    #     sigma1 = sp.bls12_381_g1(SIGMA_1), 
+    #     sigma2 = sp.bls12_381_g1(invalid_sigma_2)
+    #     ).run(sender = aliceCust, valid = False)
 
-    scenario.h2("Scenario 8: Failing tests for mutualClose")
-    scenario.h3("escrow")
-    failMut = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += failMut
-    scenario += failMut.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.h2("Scenario 8: Failing tests for mutualClose")
+    # scenario.h3("escrow")
+    # failMut = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += failMut
+    # scenario += failMut.addCustFunding().run(sender = aliceCust, amount = custFunding)
 
-    scenario.h3("Invalid signature - signing over incorrect contract_id")
-    # Signing over failCust.address instead of failMut.address 
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = failCust.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
-                                                                  cid = cid,
-                                                                  customer_balance = customer_balance,
-                                                                  merchant_balance = merchant_balance)))
-    scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid signature - signing over incorrect contract_id")
+    # # Signing over failCust.address instead of failMut.address 
+    # merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+    #                                                               contract_id = failCust.address,
+    #                                                               context_string = sp.string("zkChannels mutual close"),
+    #                                                               cid = cid,
+    #                                                               customer_balance = customer_balance,
+    #                                                               merchant_balance = merchant_balance)))
+    # scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid signature - signing over incorrect context string")
-    # Signing over "incorrect context string" instead of "zkChannels mutual close"
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = failMut.address,
-                                                                  context_string = sp.string("incorrect context string"),
-                                                                  cid = cid,
-                                                                  customer_balance = customer_balance,
-                                                                  merchant_balance = merchant_balance)))
-    scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid signature - signing over incorrect context string")
+    # # Signing over "incorrect context string" instead of "zkChannels mutual close"
+    # merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+    #                                                               contract_id = failMut.address,
+    #                                                               context_string = sp.string("incorrect context string"),
+    #                                                               cid = cid,
+    #                                                               customer_balance = customer_balance,
+    #                                                               merchant_balance = merchant_balance)))
+    # scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid signature - signing over incorrect cid")
-    # Signing over incorred cid (channel id)
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = failMut.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
-                                                                  cid = sp.bls12_381_fr("0x1111111111111111111111111111111111111111111111111111111111111111"),
-                                                                  customer_balance = customer_balance,
-                                                                  merchant_balance = merchant_balance)))
-    scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid signature - signing over incorrect cid")
+    # # Signing over incorred cid (channel id)
+    # merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+    #                                                               contract_id = failMut.address,
+    #                                                               context_string = sp.string("zkChannels mutual close"),
+    #                                                               cid = sp.bls12_381_fr("0x1111111111111111111111111111111111111111111111111111111111111111"),
+    #                                                               customer_balance = customer_balance,
+    #                                                               merchant_balance = merchant_balance)))
+    # scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid signature - signing over incorrect customer_balance")
-    # Signing over customer_balance sp.tez(5) instead of sp.tez(4)
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = failMut.address,
-                                                                  context_string = sp.string("incorrect context string"),
-                                                                  cid = cid,
-                                                                  customer_balance = sp.tez(5),
-                                                                  merchant_balance = merchant_balance)))
-    scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid signature - signing over incorrect customer_balance")
+    # # Signing over customer_balance sp.tez(5) instead of sp.tez(4)
+    # merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+    #                                                               contract_id = failMut.address,
+    #                                                               context_string = sp.string("incorrect context string"),
+    #                                                               cid = cid,
+    #                                                               customer_balance = sp.tez(5),
+    #                                                               merchant_balance = merchant_balance)))
+    # scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid signature - signing over incorrect merchant_balance")
-    # Signing over merchant_balance sp.tez(0) instead of sp.tez(1)
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = failMut.address,
-                                                                  context_string = sp.string("incorrect context string"),
-                                                                  cid = cid,
-                                                                  customer_balance = customer_balance,
-                                                                  merchant_balance = sp.tez(0))))
-    scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid signature - signing over incorrect merchant_balance")
+    # # Signing over merchant_balance sp.tez(0) instead of sp.tez(1)
+    # merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+    #                                                               contract_id = failMut.address,
+    #                                                               context_string = sp.string("incorrect context string"),
+    #                                                               cid = cid,
+    #                                                               customer_balance = customer_balance,
+    #                                                               merchant_balance = sp.tez(0))))
+    # scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid input - incorrect customer_balance")
-    # Create valid signature
-    merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
-                                                                  contract_id = failMut.address,
-                                                                  context_string = sp.string("zkChannels mutual close"),
-                                                                  cid = cid,
-                                                                  customer_balance = customer_balance,
-                                                                  merchant_balance = merchant_balance)))
-    # Passing in customer_balance sp.tez(5) instead of sp.tez(4)
-    scenario += failMut.mutualClose(customer_balance = sp.tez(5), merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid input - incorrect customer_balance")
+    # # Create valid signature
+    # merchSig = sp.make_signature(bobMerch.secret_key, sp.pack(sp.record(
+    #                                                               contract_id = failMut.address,
+    #                                                               context_string = sp.string("zkChannels mutual close"),
+    #                                                               cid = cid,
+    #                                                               customer_balance = customer_balance,
+    #                                                               merchant_balance = merchant_balance)))
+    # # Passing in customer_balance sp.tez(5) instead of sp.tez(4)
+    # scenario += failMut.mutualClose(customer_balance = sp.tez(5), merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Invalid input - incorrect merchant_balance")
-    # Passing in merchant_balance sp.tez(0) instead of sp.tez(1)
-    scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = sp.tez(0), merchSig = merchSig).run(sender = aliceCust, valid = False)
+    # scenario.h3("Invalid input - incorrect merchant_balance")
+    # # Passing in merchant_balance sp.tez(0) instead of sp.tez(1)
+    # scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = sp.tez(0), merchSig = merchSig).run(sender = aliceCust, valid = False)
 
-    scenario.h3("Verify signature used in above tests")
-    scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = True)
+    # scenario.h3("Verify signature used in above tests")
+    # scenario += failMut.mutualClose(customer_balance = customer_balance, merchant_balance = merchant_balance, merchSig = merchSig).run(sender = aliceCust, valid = True)
 
-    scenario.h1("Dual funding tests")
-    custFunding = sp.tez(3)
-    merchFunding = sp.tez(2)
-    scenario.h2("Scenario 8: escrow -> addCustFunding -> reclaimFunding -/-> addCustFunding")
-    scenario.h3("escrow")
-    reclaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += reclaim
-    scenario.h3("Customer Funding their side of the channel")
-    scenario += reclaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
-    scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
-    scenario += reclaim.reclaimFunding().run(sender = aliceCust)
-    scenario.h3("addCustFunding fails when being called for a second time")
-    scenario += reclaim.addCustFunding().run(sender = aliceCust, amount = custFunding, valid=False)
+    # scenario.h1("Dual funding tests")
+    # custFunding = sp.tez(3)
+    # merchFunding = sp.tez(2)
+    # scenario.h2("Scenario 8: escrow -> addCustFunding -> reclaimFunding -/-> addCustFunding")
+    # scenario.h3("escrow")
+    # reclaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += reclaim
+    # scenario.h3("Customer Funding their side of the channel")
+    # scenario += reclaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
+    # scenario.h3("Customer pulling out their side of the channel (before merchant funds their side)")
+    # scenario += reclaim.reclaimFunding().run(sender = aliceCust)
+    # scenario.h3("addCustFunding fails when being called for a second time")
+    # scenario += reclaim.addCustFunding().run(sender = aliceCust, amount = custFunding, valid=False)
 
-    scenario.h2("Scenario 9: escrow -/-> addMerchFunding")
-    scenario.h3("escrow")
-    addMerch = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
-    scenario += addMerch
-    scenario.h3("Merchant fails to fund their side of the channel before the customer")
-    scenario += addMerch.addMerchFunding().run(sender = bobMerch, amount = merchFunding, valid=False)
+    # scenario.h2("Scenario 9: escrow -/-> addMerchFunding")
+    # scenario.h3("escrow")
+    # addMerch = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
+    # scenario += addMerch
+    # scenario.h3("Merchant fails to fund their side of the channel before the customer")
+    # scenario += addMerch.addMerchFunding().run(sender = bobMerch, amount = merchFunding, valid=False)
 
-    scenario.table_of_contents()
+    # scenario.table_of_contents()
