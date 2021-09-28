@@ -6,6 +6,7 @@
         "prim": "pair",
         "args": [
           {
+            "Testing": "failure",
             "prim": "pair",
             "args": [
               {
