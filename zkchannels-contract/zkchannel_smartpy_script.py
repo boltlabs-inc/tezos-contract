@@ -74,7 +74,7 @@ class ZkChannel(sp.Contract):
 
     # __init__ initializes the contract's storage at the time of origination. All the arguments 
     # must be provided in the origination operation. 
-    def __init__(self, cid: sp.TBls12_381_fr, customer_address: sp.TAddress, merchant_address: sp.TAddress, merchant_public_key: sp.TKey, custFunding: sp.TMutez, merchFunding: sp.TMutez, self_delay: sp.TInt, g2: sp.TBls12_381_g2, y2s_0: sp.TBls12_381_g2, y2s_1: sp.TBls12_381_g2, y2s_2: sp.TBls12_381_g2, y2s_3: sp.TBls12_381_g2, y2s_4: sp.TBls12_381_g2, x2: sp.TBls12_381_g2, close_scalar: sp.TBls12_381_fr):
+    def __init__(self, cid: sp.TBls12_381_fr, customer_address: sp.TAddress, merchant_address: sp.TAddress, merchant_public_key: sp.TKey, custFunding: sp.TMutez, merchFunding: sp.TMutez, self_delay: sp.TInt, g2: sp.TBls12_381_g2, y2s_0: sp.TBls12_381_g2, y2s_1: sp.TBls12_381_g2, y2s_2: sp.TBls12_381_g2, y2s_3: sp.TBls12_381_g2, y2s_4: sp.TBls12_381_g2, x2: sp.TBls12_381_g2, revocation_lock: sp.TBls12_381_fr, status: sp.TNat, delay_expiry: sp.TTimestamp):
         self.init(
             # the unique identifier for the channel.
             cid                 = cid,
@@ -96,17 +96,17 @@ class ZkChannel(sp.Contract):
             # entrypoint.
             merchant_balance     = merchFunding,
             # contract status. See  above for all the possible zkChannel contract statuses.
-            status               = sp.nat(AWAITING_CUST_FUNDING),
+            status               = status,
             # revocation_lock initialized to 0x00. When the customer calls custClose, the revocation lock 
             # will be passed in as an argument and stored in revocation_lock. If the merchant has the 
             # revocation secret corresponding to revocation_lock, they can claim the entire balance using 
             # the merchDispute entrypoint.
-            revocation_lock      = sp.bls12_381_fr("0x0000000000000000000000000000000000000000000000000000000000000000"),
+            revocation_lock      = revocation_lock,
             # An enforced delay period that must have elapsed between calling custClose and 
             # custClaim, and between calling expiry and merchClaim.
             self_delay           = self_delay,
             # if the delay is triggered, delay_expiry records when the delay is due to expire.
-            delay_expiry         = sp.timestamp(0),
+            delay_expiry         = delay_expiry,
             g2                   = g2,                # Pointcheval Sanders pubkey
             y2s_0                = y2s_0,             # Pointcheval Sanders pubkey
             y2s_1                = y2s_1,             # Pointcheval Sanders pubkey
@@ -353,7 +353,9 @@ def test():
  
     # Set zkChannel parameters
     cid = sp.bls12_381_fr(CID_FR)
-    close_scalar = sp.bls12_381_fr(CLOSE_SCALAR)
+    init_revocation_lock = sp.bls12_381_fr("0x00")
+    init_delay_expiry = sp.timestamp(0)
+    init_status = sp.nat(AWAITING_CUST_FUNDING)
     # self_delay = 60*60*24 # seconds in one day - 86,400
     self_delay = 3 # seconds in one day - 86,400
     scenario.h2("On-chain installment")
@@ -372,11 +374,11 @@ def test():
     merchant_balance = sp.mutez(MERCH_CLOSE_BALANCE_MUTEZ)
 
     # add_compilation_target allows us to compile the contract using the smartpy-cli
-    sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar))
+    sp.add_compilation_target("compiled_contract", ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry))
 
     scenario.h2("Scenario 1: escrow -> expiry -> merchClaim")
     scenario.h3("escrow")
-    mClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    mClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += mClaim
     scenario.h3("Funding the channel")
     scenario += mClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
@@ -389,7 +391,7 @@ def test():
  
     scenario.h2("Scenario 2: escrow -> custClose -> custClaim")
     scenario.h3("escrow")
-    cClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    cClaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += cClaim
     scenario.h3("Funding the channel")
     scenario += cClaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
@@ -410,7 +412,7 @@ def test():
  
     scenario.h2("Scenario 3: escrow -> custClose -> merchDispute")
     scenario.h3("escrow")
-    mDisp = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    mDisp = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += mDisp
     scenario.h3("Funding the channel")
     scenario += mDisp.addCustFunding().run(sender = aliceCust, amount = custFunding)
@@ -429,7 +431,7 @@ def test():
  
     scenario.h2("Scenario 4: escrow -> expiry -> custClose")
     scenario.h3("escrow")
-    cClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    cClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += cClose
     scenario.h3("Funding the channel")
     scenario += cClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
@@ -446,7 +448,7 @@ def test():
  
     scenario.h2("Scenario 5: escrow -> mutualClose")
     scenario.h3("escrow")
-    mutClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    mutClose = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += mutClose
     scenario.h3("Funding the channel")
     scenario += mutClose.addCustFunding().run(sender = aliceCust, amount = custFunding)
@@ -462,7 +464,7 @@ def test():
  
     scenario.h2("Scenario 6: Failing tests for custClose")
     scenario.h3("escrow")
-    failCust = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    failCust = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += failCust
     scenario += failCust.addCustFunding().run(sender = aliceCust, amount = custFunding)
 
@@ -596,7 +598,7 @@ def test():
 
     scenario.h2("Scenario 8: Failing tests for mutualClose")
     scenario.h3("escrow")
-    failMut = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    failMut = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += failMut
     scenario += failMut.addCustFunding().run(sender = aliceCust, amount = custFunding)
 
@@ -673,7 +675,7 @@ def test():
     merchFunding = sp.tez(2)
     scenario.h2("Scenario 8: escrow -> addCustFunding -> reclaimFunding -/-> addCustFunding")
     scenario.h3("escrow")
-    reclaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    reclaim = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += reclaim
     scenario.h3("Customer Funding their side of the channel")
     scenario += reclaim.addCustFunding().run(sender = aliceCust, amount = custFunding)
@@ -684,7 +686,7 @@ def test():
 
     scenario.h2("Scenario 9: escrow -/-> addMerchFunding")
     scenario.h3("escrow")
-    addMerch = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, close_scalar)
+    addMerch = ZkChannel(cid, aliceCust.address, bobMerch.address, bobMerch.public_key, custFunding, merchFunding, self_delay, g2, y2s_0, y2s_1, y2s_2, y2s_3, y2s_4, x2, init_revocation_lock, init_status, init_delay_expiry)
     scenario += addMerch
     scenario.h3("Merchant fails to fund their side of the channel before the customer")
     scenario += addMerch.addMerchFunding().run(sender = bobMerch, amount = merchFunding, valid=False)
