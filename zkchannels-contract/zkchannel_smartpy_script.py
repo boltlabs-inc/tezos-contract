@@ -84,23 +84,24 @@ class ZkChannel(sp.Contract):
             merchant_address    = merchant_address,
             # merchant tezos public key
             merchant_public_key  = merchant_public_key,
-            # customer's balance. The contract is initialized with this value set to the
+            # customer's balance. The contract should be initialized with this value set to the
             # customer's initial balance. The initial balance must be funded in one operation
             # using the addCustFunding entrypoint. If custClose is called, customer_balance 
             # stores the customer's closing balance.
             customer_balance     = custFunding,
-            # merchant's balance. The contract is initialized with this value set to the merchant's 
+            # merchant's balance. The contract should be initialized with this value set to the merchant's 
             # initial balance. If the channel is funded by the customer alone, merchant_balance is 
             # set to 0 and addMerchFunding is not called. If it is a dual funded channel, the 
             # merchant's initial balance must be funded in one operation using the addMerchFunding 
             # entrypoint.
             merchant_balance     = merchFunding,
-            # contract status. See  above for all the possible zkChannel contract statuses.
+            # contract status. See above for all the possible zkChannel contract statuses. The contract
+            # should be initialized with the status set to 0, corresponding to AWAITING_CUST_FUNDING.
             status               = status,
-            # revocation_lock initialized to 0x00. When the customer calls custClose, the revocation lock 
-            # will be passed in as an argument and stored in revocation_lock. If the merchant has the 
-            # revocation secret corresponding to revocation_lock, they can claim the entire balance using 
-            # the merchDispute entrypoint.
+            # The revocation_lock should be initialized to 0x00. When the customer calls custClose, 
+            # the revocation lock will be passed in as an argument and stored in revocation_lock. If the 
+            # merchant has the revocation secret corresponding to revocation_lock, they can claim the 
+            # entire balance using the merchDispute entrypoint.
             revocation_lock      = revocation_lock,
             # An enforced delay period that must have elapsed between calling custClose and 
             # custClaim, and between calling expiry and merchClaim.
