@@ -17,6 +17,8 @@ RPC.
 import argparse
 import json
 from pytezos import pytezos, ContractInterface
+from pytezos.michelson.types import MichelsonType
+from pytezos.michelson.parse import michelson_to_micheline
 from pprint import pprint
 import requests
 
@@ -257,6 +259,23 @@ min_confirmations,
 
     return {"status": status, "level": level, "op_info": op_info}
 
+def sign_mutual_close(
+merch_acc,
+contract_id,
+customer_balance, merchant_balance
+):
+    # Merchant pytezos interface
+    merch_py = pytezos.using(key=merch_acc, shell=uri)
+
+    # note that although the `channel_id` is of type `bls12_381_fr`, we specify the type as `bytes`. 
+    # This does not affect how Tezos `pack`s the values. The reason for using `bytes` here is because
+    # pytezos expects `bls12_381_fr` types to be represented as an integer, but here we represent the `channel_id` as bytes.
+    ty = MichelsonType.match(michelson_to_micheline("pair (pair bytes string) (pair address (pair mutez mutez))"))
+    packed = ty.from_python_object((channel_id, 'zkChannels mutual close', contract_id, customer_balance, merchant_balance)).pack(legacy=True).hex()
+    mutual_close_signature = merch_py.key.sign(packed)
+
+    return mutual_close_signature
+
 def mutual_close(
 cust_acc,
 contract_id,
@@ -390,7 +409,50 @@ def test_custclaim():
         min_confirmations
         )["op_info"]
     feetracker.add_result('custClose', op_info) 
-    import pdb; pdb.set_trace()
+
+    op_info = cust_claim(
+        cust_acc,
+        origination_op["contract_id"],
+        min_confirmations
+        )["op_info"]
+    feetracker.add_result('custClaim', op_info)
+
+def test_mutualclose():
+    print_header("Scenario test_mutualclose: origination -> add_customer_funding -> mutual_close")
+
+    origination_op = originate(uri,
+        cust_addr, merch_addr,
+        cust_acc,
+        merch_pubkey,
+        channel_id,
+        merch_g2, merch_y2s, merch_x2,
+        cust_funding, merch_funding,
+        min_confirmations, 
+        self_delay
+        )
+    feetracker.add_result('originate', origination_op["op_info"]) 
+
+    op_info = add_customer_funding(
+        cust_acc,
+        origination_op["contract_id"],
+        cust_funding,
+        min_confirmations
+        )["op_info"]
+    feetracker.add_result('addCustFunding', op_info) 
+
+    merch_mutual_close_signature = sign_mutual_close(
+        merch_acc,
+        origination_op["contract_id"],
+        customer_balance, merchant_balance)
+
+    op_info = mutual_close(
+        cust_acc,
+        origination_op["contract_id"],
+        customer_balance, merchant_balance,
+        merch_mutual_close_signature,
+        min_confirmations
+        )["op_info"]
+    feetracker.add_result('mutualClose', op_info) 
     
     op_info = cust_claim(
         cust_acc,
@@ -612,16 +674,17 @@ cust_py = pytezos.using(key=cust_acc, shell=uri)
 # Initialize the feetracker, used to record gas and storage costs of operations.
 feetracker = FeeTracker()
 
-# Activate and reveal pubkeys for customer and merchant tezos accounts.
+# # Activate and reveal pubkeys for customer and merchant tezos accounts.
 activate_and_reveal(cust_acc)
 activate_and_reveal(merch_acc)
 
-# Test contract flows
+# # Test contract flows
 test_custclaim()
 test_dispute()
 test_merchClaim()
 test_dualfund()
 test_reclaim()
+test_mutualclose()
 
 # Print gas and storage costs of the operations tested.
 feetracker.print_fees()
