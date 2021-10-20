@@ -54,7 +54,9 @@ self_delay
     "x2": merch_x2,
     "revocation_lock": "0x00", 
     "self_delay": self_delay, 
-    "status": 0}
+    "status": 0,
+    "packed_stuff": "0x00",
+    "valid_mutual_sig": False}
 
     # Originate main zkchannel contract
     out = cust_py.origination(script=main_code.script(initial_storage=initial_storage)).autofill().sign().send(min_confirmations=min_confirmations)
@@ -270,8 +272,9 @@ customer_balance, merchant_balance
     # note that although the `channel_id` is of type `bls12_381_fr`, we specify the type as `bytes`. 
     # This does not affect how Tezos `pack`s the values. The reason for using `bytes` here is because
     # pytezos expects `bls12_381_fr` types to be represented as an integer, but here we represent the `channel_id` as bytes.
-    ty = MichelsonType.match(michelson_to_micheline("pair (pair bytes string) (pair address (pair mutez mutez))"))
+    ty = MichelsonType.match(michelson_to_micheline("pair (pair bls12_381_fr string) (pair address (pair mutez mutez))"))
     packed = ty.from_python_object((channel_id, 'zkChannels mutual close', contract_id, customer_balance, merchant_balance)).pack(legacy=True).hex()
+    print("packed from pytezos: \n", packed)
     mutual_close_signature = merch_py.key.sign(packed)
 
     return mutual_close_signature
@@ -453,13 +456,7 @@ def test_mutualclose():
         min_confirmations
         )["op_info"]
     feetracker.add_result('mutualClose', op_info) 
-    
-    op_info = cust_claim(
-        cust_acc,
-        origination_op["contract_id"],
-        min_confirmations
-        )["op_info"]
-    feetracker.add_result('custClaim', op_info) 
+
 
 def test_dispute():
     print_header("Scenario test_dispute: origination -> add_customer_funding -> expiry -> cust_close -> merch_dispute")
@@ -675,15 +672,15 @@ cust_py = pytezos.using(key=cust_acc, shell=uri)
 feetracker = FeeTracker()
 
 # # Activate and reveal pubkeys for customer and merchant tezos accounts.
-activate_and_reveal(cust_acc)
-activate_and_reveal(merch_acc)
+# activate_and_reveal(cust_acc)
+# activate_and_reveal(merch_acc)
 
-# # Test contract flows
-test_custclaim()
-test_dispute()
-test_merchClaim()
-test_dualfund()
-test_reclaim()
+# # # Test contract flows
+# test_custclaim()
+# test_dispute()
+# test_merchClaim()
+# test_dualfund()
+# test_reclaim()
 test_mutualclose()
 
 # Print gas and storage costs of the operations tested.
