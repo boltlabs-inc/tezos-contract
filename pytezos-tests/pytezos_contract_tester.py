@@ -275,6 +275,28 @@ customer_balance, merchant_balance
 
     return mutual_close_signature
 
+def verify_mutual_close_signature(
+contract_id,
+customer_balance, merchant_balance,
+merch_pubkey,
+mutual_close_signature
+):
+    # Merchant pytezos interface with the merchant's public key
+    py = pytezos.using(key=merch_pubkey)
+    # Specify the structure and types of the fields going into the mutual close state.
+    ty = MichelsonType.match(michelson_to_micheline("pair (pair bls12_381_fr string) (pair address (pair mutez mutez))"))
+    # create the packed (serialized) version of the mutual close state, corresponding to the types above. 
+    # 'legacy=True' ensures pytezos will always serialize the data as in michelson rather than micheline. 
+    packed = ty.from_python_object((channel_id, 'zkChannels mutual close', contract_id, customer_balance, merchant_balance)).pack(legacy=True).hex()
+
+    try:
+        py.key.verify(mutual_close_signature, packed)
+        signature_check = True
+    except:
+        signature_check = False
+
+    return signature_check
+
 def mutual_close(
 cust_acc,
 contract_id,
@@ -443,6 +465,14 @@ def test_mutualclose():
         merch_acc,
         origination_op["contract_id"],
         customer_balance, merchant_balance)
+
+    valid_signature = verify_mutual_close_signature(
+        origination_op["contract_id"],
+        customer_balance, merchant_balance,
+        merch_pubkey,
+        merch_mutual_close_signature
+        )
+    assert(valid_signature)
 
     op_info = mutual_close(
         cust_acc,
